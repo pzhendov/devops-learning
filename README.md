@@ -25,4 +25,5 @@ The script checks whether the supplied file exists and returns an appropriate ex
 - Configured Git and GitHub
 - Set up SSH authentication
 - Published my first repository
+- Practised pushing and pulling changes
 
