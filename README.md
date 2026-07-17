@@ -19,3 +19,10 @@ This repository contains my practical DevOps learning exercises.
 ```
 
 The script checks whether the supplied file exists and returns an appropriate exit code.
+
+## Progress
+
+- Configured Git and GitHub
+- Set up SSH authentication
+- Published my first repository
+
