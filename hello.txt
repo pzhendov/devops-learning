@@ -1,3 +1,4 @@
 Hello DevOps
 I am learning the command line
 Git records changes to files
+Git branches isolate new work
