@@ -27,3 +27,6 @@ The script checks whether the supplied file exists and returns an appropriate ex
 - Published my first repository
 - Practised pushing and pulling changes
 
+## Next Goal
+
+Learn Linux administration and networking fundamentals.
