@@ -1,0 +1,43 @@
+name: Validate DevOps project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository files
+        uses: actions/checkout@v6
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+
+      - name: Check Bash scripts
+        run: shellcheck scripts/*.sh
+
+      - name: Check required project files
+        run: |
+          test -s web/index.html
+          test -s systemd/nginx-healthcheck.service
+          test -s systemd/nginx-healthcheck.timer
+
+      - name: Check important configuration
+        run: |
+          grep -q "ExecStart=" systemd/nginx-healthcheck.service
+          grep -q "OnUnitActiveSec=" systemd/nginx-healthcheck.timer
+          grep -q "<h1>" web/index.html
+
+      - name: Validation completed
+        run: echo "All project validation checks passed"
