@@ -39,5 +39,40 @@ jobs:
           grep -q "OnUnitActiveSec=" systemd/nginx-healthcheck.timer
           grep -q "<h1>" web/index.html
 
+      - name: Validate Docker Compose configuration
+        run: docker compose --file docker/nginx/compose.yaml config
+
+      - name: Build Nginx Docker image
+        run: docker build --tag pavel-nginx:ci docker/nginx
+
+      - name: Start Nginx test container
+        run: |
+          docker run \
+            --detach \
+            --name nginx-ci \
+            --publish 8080:80 \
+            pavel-nginx:ci
+
+      - name: Test Nginx container
+        run: |
+          for attempt in {1..10}; do
+            if curl --fail --silent http://localhost:8080 |
+              grep --quiet "Image version"; then
+              echo "Container test passed"
+              exit 0
+            fi
+
+            echo "Waiting for Nginx: attempt $attempt"
+            sleep 1
+          done
+
+          docker logs nginx-ci
+          exit 1
+
+      - name: Remove Nginx test container
+        if: always()
+        run: docker rm --force nginx-ci
+
       - name: Validation completed
         run: echo "All project validation checks passed"
+        
