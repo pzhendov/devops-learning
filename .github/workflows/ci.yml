@@ -73,6 +73,51 @@ jobs:
         if: always()
         run: docker rm --force nginx-ci
 
+      - name: Check visitor counter Python syntax
+        run: |
+          python3 -m py_compile docker/visitor-counter/app.py
+
+      - name: Validate visitor counter Compose configuration
+        run: |
+          docker compose \
+            --file docker/visitor-counter/compose.yaml \
+            config
+
+      - name: Start visitor counter project
+        run: |
+          docker compose \
+            --file docker/visitor-counter/compose.yaml \
+            up --detach --build
+
+      - name: Test visitor counter project
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:8081/health |
+              grep --quiet '"status":"healthy"'; then
+              curl --fail --silent http://localhost:8081 |
+                grep --quiet "Page visits"
+
+              echo "Visitor counter test passed"
+              exit 0
+            fi
+
+            echo "Waiting for visitor counter: attempt $attempt"
+            sleep 2
+          done
+
+          docker compose \
+            --file docker/visitor-counter/compose.yaml \
+            logs
+
+          exit 1
+
+      - name: Remove visitor counter project
+        if: always()
+        run: |
+          docker compose \
+            --file docker/visitor-counter/compose.yaml \
+            down --volumes
+
       - name: Validation completed
         run: echo "All project validation checks passed"
         
