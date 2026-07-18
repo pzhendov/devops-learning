@@ -1,0 +1,9 @@
+services:
+  web:
+    build:
+      context: .
+    image: pavel-nginx:1.5
+    container_name: nginx-compose
+    ports:
+      - "8080:80"
+    restart: unless-stopped
