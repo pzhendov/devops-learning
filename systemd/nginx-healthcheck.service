@@ -1,0 +1,8 @@
+[Unit]
+Description=Check local Nginx health
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/bin/check-nginx

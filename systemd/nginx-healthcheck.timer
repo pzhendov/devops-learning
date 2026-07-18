@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Nginx health check regularly
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+AccuracySec=10s
+Unit=nginx-healthcheck.service
+
+[Install]
+WantedBy=timers.target

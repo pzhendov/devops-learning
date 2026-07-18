@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -u
+
+url="${1:-http://localhost}"
+
+if ! status="$(curl --silent \
+    --show-error \
+    --output /dev/null \
+    --write-out '%{http_code}' \
+    "$url")"; then
+    echo "CRITICAL: unable to connect to $url" >&2
+    exit 2
+fi
+
+if [[ "$status" == "200" ]]; then
+    echo "OK: $url returned HTTP $status"
+    exit 0
+else
+    echo "WARNING: $url returned HTTP $status" >&2
+    exit 1
+fi
