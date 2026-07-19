@@ -145,4 +145,19 @@ jobs:
             -input=false \
             -lock=false \
             -out=ci.tfplan
-            
+      
+      - name: Initialize Terraform multi-file lab
+        working-directory: terraform/multi-file-lab
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform multi-file lab
+        working-directory: terraform/multi-file-lab
+        run: terraform validate
+
+      - name: Plan Terraform multi-file lab
+        working-directory: terraform/multi-file-lab
+        run: |
+          terraform plan \
+            -input=false \
+            -lock=false \
+            -out=ci.tfplan
