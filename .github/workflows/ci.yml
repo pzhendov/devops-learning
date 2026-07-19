@@ -120,4 +120,29 @@ jobs:
 
       - name: Validation completed
         run: echo "All project validation checks passed"
-        
+      
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive terraform
+
+      - name: Initialize Terraform
+        working-directory: terraform/add-local-lab
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform
+        working-directory: terraform/add-local-lab
+        run: terraform validate
+
+      - name: Create Terraform test plan
+        working-directory: terraform/add-local-lab
+        run: |
+          terraform plan \
+            -input=false \
+            -lock=false \
+            -out=ci.tfplan
+            
