@@ -1,32 +1,96 @@
 # DevOps Learning
 
-This repository contains my practical DevOps learning exercises.
+This repository contains my practical DevOps learning exercises and projects.
 
 ## Topics Practised
 
 - Terminal navigation
-- Files and directories
-- Shell scripting
-- File permissions
-- Processes and exit codes
-- Git commits and branches
-- Git ignore rules
+- Linux files and directories
+- Users, groups and file permissions
+- Processes, services and system logs
+- Linux networking and firewalls
+- Bash scripting and exit codes
+- Git commits, branches and pull requests
+- GitHub SSH authentication
+- GitHub Actions continuous integration
+- Nginx web-server administration
+- Docker images and containers
+- Container ports, networks and health checks
+- Bind mounts and named volumes
+- Docker Compose
+- Multi-container applications
+- Terraform configuration and providers
+- Terraform state, plans and drift detection
+- Terraform variables, locals and templates
+- Terraform `for_each` and multiple resources
 
-## Run the Script
+## Practical Projects
 
-```bash
-./hello.sh Pavel hello.txt
-```
+### Bash Health Check
 
-The script checks whether the supplied file exists and returns an appropriate exit code.
+A reusable Bash script that checks an Nginx endpoint and returns operational exit codes:
 
-## Progress
+- `0` — healthy
+- `1` — warning
+- `2` — critical connection failure
 
-- Configured Git and GitHub
-- Set up SSH authentication
-- Published my first repository
-- Practised pushing and pulling changes
+### Containerized Nginx Website
 
-## Next Goal
+A custom Nginx Docker image with:
 
-Learn Linux administration and networking fundamentals.
+- Versioned image releases
+- Container health checks
+- Docker Compose configuration
+- Automated CI build and testing
+
+### Visitor Counter Application
+
+A multi-container application containing:
+
+- Python and Flask
+- Gunicorn application server
+- Redis data service
+- Docker internal networking
+- Persistent Redis volume
+- Service health checks
+- Failure and recovery testing
+
+### Terraform Local Infrastructure
+
+Terraform exercises covering:
+
+- Local provider resources
+- Saved execution plans
+- State management
+- Drift detection and repair
+- Input variables and `.tfvars`
+- Maps, locals and `for_each`
+- Template-generated environment configurations
+- Controlled resource creation and removal
+
+## Continuous Integration
+
+GitHub Actions automatically performs:
+
+- ShellCheck validation
+- Docker image builds
+- Container health tests
+- Multi-container integration tests
+- Terraform formatting
+- Terraform initialization and validation
+- Terraform execution plans
+
+## Repository Workflow
+
+Changes follow this workflow:
+
+```text
+Feature branch
+    → local validation
+    → commit
+    → push
+    → pull request
+    → automated CI checks
+    → merge into main
+
+    
