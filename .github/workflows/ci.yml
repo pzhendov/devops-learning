@@ -131,15 +131,15 @@ jobs:
         run: terraform fmt -check -recursive terraform
 
       - name: Initialize Terraform
-        working-directory: terraform/add-local-lab
+        working-directory: terraform/local-lab
         run: terraform init -backend=false -input=false
 
       - name: Validate Terraform
-        working-directory: terraform/add-local-lab
+        working-directory: terraform/local-lab
         run: terraform validate
 
       - name: Create Terraform test plan
-        working-directory: terraform/add-local-lab
+        working-directory: terraform/local-lab
         run: |
           terraform plan \
             -input=false \
@@ -156,6 +156,22 @@ jobs:
 
       - name: Plan Terraform multi-file lab
         working-directory: terraform/multi-file-lab
+        run: |
+          terraform plan \
+            -input=false \
+            -lock=false \
+            -out=ci.tfplan
+
+      - name: Initialize Terraform module lab
+        working-directory: terraform/module-lab
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform module lab
+        working-directory: terraform/module-lab
+        run: terraform validate
+
+      - name: Plan Terraform module lab
+        working-directory: terraform/module-lab
         run: |
           terraform plan \
             -input=false \
