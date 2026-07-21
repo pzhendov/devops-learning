@@ -177,3 +177,11 @@ jobs:
             -input=false \
             -lock=false \
             -out=ci.tfplan
+
+      - name: Initialize Terraform Docker lab
+        working-directory: terraform/docker-lab
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform Docker lab
+        working-directory: terraform/docker-lab
+        run: terraform validate
