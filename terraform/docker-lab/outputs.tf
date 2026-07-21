@@ -17,3 +17,8 @@ output "volume_name" {
   description = "Terraform-managed Docker volume"
   value       = docker_volume.nginx_cache.name
 }
+
+output "state_storage" {
+  description = "Location where Terraform state is stored"
+  value       = "HCP Terraform"
+}
