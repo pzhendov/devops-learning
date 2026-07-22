@@ -1,0 +1,46 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.11.2
+    container_name: monitoring-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    container_name: monitoring-node-exporter
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.32.1
+    container_name: monitoring-alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  alertmanager-data:

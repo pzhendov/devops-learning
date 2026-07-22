@@ -33,6 +33,11 @@ jobs:
           test -s systemd/nginx-healthcheck.service
           test -s systemd/nginx-healthcheck.timer
           test -x scripts/check-tls
+          test -s monitoring/prometheus/prometheus.yml
+          test -s monitoring/prometheus/alerts.yml
+          test -s monitoring/prometheus/alertmanager.yml
+          test -s monitoring/prometheus/compose.yaml
+          test -s monitoring/prometheus/README.md
 
       - name: Check important configuration
         run: |
@@ -119,9 +124,29 @@ jobs:
             --file docker/visitor-counter/compose.yaml \
             down --volumes
 
-      - name: Validation completed
-        run: echo "All project validation checks passed"
-      
+      - name: Validate monitoring Compose configuration
+        run: |
+          docker compose \
+            --file monitoring/prometheus/compose.yaml \
+            config --quiet
+
+      - name: Validate Prometheus configuration and alert rules
+        run: |
+          docker run --rm \
+            --entrypoint promtool \
+            --mount type=bind,source="$PWD/monitoring/prometheus/prometheus.yml",target=/etc/prometheus/prometheus.yml,readonly \
+            --mount type=bind,source="$PWD/monitoring/prometheus/alerts.yml",target=/etc/prometheus/alerts.yml,readonly \
+            prom/prometheus:v3.11.2 \
+            check config /etc/prometheus/prometheus.yml
+
+      - name: Validate Alertmanager configuration
+        run: |
+          docker run --rm \
+            --entrypoint amtool \
+            --mount type=bind,source="$PWD/monitoring/prometheus/alertmanager.yml",target=/etc/alertmanager/alertmanager.yml,readonly \
+            prom/alertmanager:v0.32.1 \
+            check-config /etc/alertmanager/alertmanager.yml
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4
         with:
@@ -186,3 +211,6 @@ jobs:
       - name: Validate Terraform Docker lab
         working-directory: terraform/docker-lab
         run: terraform validate
+
+      - name: Validation completed
+        run: echo "All project validation checks passed"
