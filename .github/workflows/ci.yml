@@ -25,13 +25,14 @@ jobs:
           sudo apt-get install --yes shellcheck
 
       - name: Check Bash scripts
-        run: shellcheck scripts/*.sh
+        run: shellcheck scripts/*
 
       - name: Check required project files
         run: |
           test -s web/index.html
           test -s systemd/nginx-healthcheck.service
           test -s systemd/nginx-healthcheck.timer
+          test -x scripts/check-tls
 
       - name: Check important configuration
         run: |
