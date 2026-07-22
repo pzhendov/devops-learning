@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -u
+
+host="${1:-github.com}"
+days="${2:-30}"
+
+if ! [[ "$days" =~ ^[0-9]+$ ]]; then
+    echo "UNKNOWN: days must be a non-negative whole number" >&2
+    exit 3
+fi
+
+seconds=$((days * 86400))
+
+if ! certificate="$(
+    timeout 10 openssl s_client \
+        -connect "${host}:443" \
+        -servername "$host" \
+        -verify_hostname "$host" \
+        -verify_return_error \
+        </dev/null 2>/dev/null
+)"; then
+    echo "CRITICAL: unable to establish a verified TLS connection to $host" >&2
+    exit 2
+fi
+
+expiry="$(
+    printf '%s\n' "$certificate" |
+        openssl x509 -noout -enddate 2>/dev/null |
+        cut -d= -f2-
+)"
+
+if [[ -z "$expiry" ]]; then
+    echo "CRITICAL: unable to read the certificate for $host" >&2
+    exit 2
+fi
+
+if printf '%s\n' "$certificate" |
+    openssl x509 -noout -checkend "$seconds" >/dev/null 2>&1; then
+    echo "OK: $host certificate is valid for at least $days more days"
+    echo "Expires: $expiry"
+    exit 0
+else
+    echo "WARNING: $host certificate expires within $days days" >&2
+    echo "Expires: $expiry" >&2
+    exit 1
+fi
+
