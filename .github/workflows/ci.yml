@@ -19,10 +19,10 @@ jobs:
       - name: Download repository files
         uses: actions/checkout@v6
 
-      - name: Install ShellCheck
+      - name: Install validation tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes shellcheck
+          sudo apt-get install --yes shellcheck python3-yaml jq
 
       - name: Check Bash scripts
         run: shellcheck scripts/*
@@ -38,6 +38,9 @@ jobs:
           test -s monitoring/prometheus/alertmanager.yml
           test -s monitoring/prometheus/compose.yaml
           test -s monitoring/prometheus/README.md
+          test -s monitoring/prometheus/grafana/dashboards/devops-lab-overview.json
+          test -s monitoring/prometheus/grafana/provisioning/dashboards/provider.yml
+          test -s monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml
 
       - name: Check important configuration
         run: |
@@ -146,6 +149,39 @@ jobs:
             --mount type=bind,source="$PWD/monitoring/prometheus/alertmanager.yml",target=/etc/alertmanager/alertmanager.yml,readonly \
             prom/alertmanager:v0.32.1 \
             check-config /etc/alertmanager/alertmanager.yml
+
+      - name: Validate Grafana provisioning YAML
+        run: |
+          python3 -c '
+          from pathlib import Path
+          import yaml
+
+          files = [
+              "monitoring/prometheus/grafana/provisioning/dashboards/provider.yml",
+              "monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml",
+          ]
+
+          for filename in files:
+              yaml.safe_load(Path(filename).read_text(encoding="utf-8"))
+              print(f"Valid YAML: {filename}")
+          '
+
+      - name: Validate Grafana dashboard JSON
+        run: |
+          jq -e '
+            (.uid == "devops-lab-overview")
+            and (.id == null)
+            and ((.panels | length) == 5)
+            and (
+              [.. | objects | select(.type? == "prometheus") | .uid]
+              | length > 0
+            )
+            and (
+              [.. | objects | select(.type? == "prometheus") | .uid]
+              | all(. == "prometheus")
+            )
+          ' monitoring/prometheus/grafana/dashboards/devops-lab-overview.json \
+            >/dev/null
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4
