@@ -41,6 +41,19 @@ services:
       - alertmanager-data:/alertmanager
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:13.1.1
+    container_name: monitoring-grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+
 volumes:
   prometheus-data:
   alertmanager-data:
+  grafana-data:
