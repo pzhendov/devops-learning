@@ -41,6 +41,9 @@ jobs:
           test -s monitoring/prometheus/grafana/dashboards/devops-lab-overview.json
           test -s monitoring/prometheus/grafana/provisioning/dashboards/provider.yml
           test -s monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml
+          test -s monitoring/prometheus/webhook-receiver/app.py
+          test -s monitoring/prometheus/webhook-receiver/Dockerfile
+          test -s monitoring/prometheus/webhook-receiver/.dockerignore
 
       - name: Check important configuration
         run: |
@@ -132,6 +135,44 @@ jobs:
           docker compose \
             --file monitoring/prometheus/compose.yaml \
             config --quiet
+
+      - name: Validate webhook receiver Python
+        run: |
+          python3 -m py_compile \
+            monitoring/prometheus/webhook-receiver/app.py
+
+      - name: Build webhook receiver image
+        run: |
+          docker build \
+            --tag webhook-receiver:ci \
+            monitoring/prometheus/webhook-receiver
+
+      - name: Test webhook receiver
+        run: |
+          docker run \
+            --detach \
+            --name webhook-receiver-ci \
+            --publish 127.0.0.1:18080:8080 \
+            webhook-receiver:ci
+
+          for attempt in {1..10}; do
+            if curl --fail --silent \
+              http://127.0.0.1:18080/health |
+              grep --quiet '"status": "healthy"'; then
+              echo "Webhook receiver health check passed"
+              exit 0
+            fi
+
+            echo "Waiting for webhook receiver: attempt $attempt"
+            sleep 1
+          done
+
+          docker logs webhook-receiver-ci
+          exit 1
+
+      - name: Remove webhook receiver test container
+        if: always()
+        run: docker rm --force webhook-receiver-ci
 
       - name: Validate Prometheus configuration and alert rules
         run: |
