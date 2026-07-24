@@ -12,3 +12,6 @@ route:
 
 receivers:
   - name: local-receiver
+    webhook_configs:
+      - url: http://webhook-receiver:8080/alerts
+        send_resolved: true

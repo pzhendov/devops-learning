@@ -8,6 +8,7 @@ This lab provides a containerized monitoring, visualization, and alert-managemen
 - Node Exporter exposes Linux host metrics.
 - Alertmanager receives, groups, silences, and routes alerts.
 - Grafana queries Prometheus and visualizes the collected metrics.
+- The webhook receiver accepts and logs firing and resolved Alertmanager notifications.
 
 ## Architecture
 
@@ -18,7 +19,7 @@ Linux host
 Node Exporter
     |
     v
-Prometheus --------> Alertmanager
+Prometheus --------> Alertmanager --------> Webhook Receiver
     |
     v
 Grafana
@@ -43,6 +44,30 @@ inactive -> pending -> firing -> resolved
 ```
 
 Alertmanager silences can suppress notifications during planned maintenance without disabling metric collection or alert evaluation.
+
+## Webhook Notifications
+
+Alertmanager sends both firing and resolved notifications to the private webhook receiver at `http://webhook-receiver:8080/alerts`.
+
+The receiver:
+
+- Accepts Alertmanager JSON payloads
+- Logs alert labels, annotations, status, and timestamps
+- Returns HTTP `200` after accepting a notification
+- Provides a `/health` endpoint for its container health check
+- Runs as a non-root user
+- Is reachable only inside the Docker Compose network
+
+Notification flow:
+
+```text
+Target fails
+    -> Prometheus fires TargetDown
+    -> Alertmanager routes the alert
+    -> Webhook receiver logs a firing notification
+    -> Target recovers
+    -> Webhook receiver logs a resolved notification
+```
 
 ## Grafana Dashboard
 
@@ -83,6 +108,13 @@ Grafana:
 curl --fail http://127.0.0.1:3000/api/health
 ```
 
+Webhook receiver:
+
+```bash
+docker compose exec webhook-receiver \
+python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/health").read().decode())'
+```
+
 ## Access from a Remote Computer
 
 The management interfaces bind only to the VM loopback address. Use SSH forwarding from the local computer:
@@ -121,3 +153,6 @@ The GitHub Actions workflow validates:
 - Alertmanager configuration
 - Grafana provisioning YAML
 - Grafana dashboard JSON
+- Webhook receiver Python syntax
+- Webhook receiver image build
+- Webhook receiver health endpoint
