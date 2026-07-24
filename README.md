@@ -1,96 +1,179 @@
-# DevOps Learning
+# DevOps Learning Lab
 
-This repository contains my practical DevOps learning exercises and projects.
+[![Validate DevOps project](https://github.com/pzhendov/devops-learning/actions/workflows/ci.yml/badge.svg)](https://github.com/pzhendov/devops-learning/actions/workflows/ci.yml)
 
-## Topics Practised
+A hands-on DevOps learning repository built around practical Linux administration, automation, containers, Infrastructure as Code, CI/CD, networking, and observability.
 
-- Terminal navigation
-- Linux files and directories
-- Users, groups and file permissions
-- Processes, services and system logs
-- Linux networking and firewalls
-- Bash scripting and exit codes
-- Git commits, branches and pull requests
-- GitHub SSH authentication
-- GitHub Actions continuous integration
-- Nginx web-server administration
-- Docker images and containers
-- Container ports, networks and health checks
-- Bind mounts and named volumes
-- Docker Compose
-- Multi-container applications
-- Terraform configuration and providers
-- Terraform state, plans and drift detection
-- Terraform variables, locals and templates
-- Terraform `for_each` and multiple resources
+The projects are developed in isolated Git branches, validated locally and in GitHub Actions, reviewed through pull requests, and merged into `main`.
+
+## Core Skills Practised
+
+### Linux and Networking
+
+- Linux users, groups, permissions, processes, services, and logs
+- systemd services and timers
+- Filesystems, memory, CPU, load, and resource troubleshooting
+- DNS resolution, routing, TCP ports, HTTP, HTTPS, and TLS
+- UFW firewall behaviour and Docker networking
+- Packet inspection with `tcpdump`
+- Secure remote access with SSH and SCP
+
+### Automation
+
+- Bash scripts with arguments, validation, and operational exit codes
+- Nginx deployment automation
+- HTTP and TLS certificate health checks
+- Cron and systemd scheduling
+- ShellCheck validation
+
+### Containers
+
+- Docker images, containers, networks, volumes, and bind mounts
+- Container health checks and versioned images
+- Docker Compose application management
+- Multi-container service communication
+- Persistent application data
+- Failure, recovery, and rollback testing
+
+### Infrastructure as Code
+
+- Terraform providers, resources, variables, locals, and outputs
+- Saved plans, state inspection, drift detection, and repair
+- `for_each`, templates, and multi-environment configuration
+- Reusable Terraform modules
+- Docker infrastructure managed through Terraform
+- HCP Terraform remote state and state locking
+
+### Observability
+
+- Linux metrics with Node Exporter
+- Metric collection and PromQL with Prometheus
+- Alert lifecycle testing: inactive, pending, firing, and resolved
+- Alert routing and maintenance silences with Alertmanager
+- Grafana dashboards for CPU, memory, disk, load, and availability
+- Provisioned Grafana data sources and dashboards
+- Monitoring configuration stored and validated as code
 
 ## Practical Projects
 
-### Bash Health Check
+### Linux Web Server Operations
 
-A reusable Bash script that checks an Nginx endpoint and returns operational exit codes:
+An Nginx web server managed with Linux operational tooling:
 
-- `0` — healthy
-- `1` — warning
-- `2` — critical connection failure
+- Custom webpage deployment
+- systemd service health checks and timers
+- Access and service-log inspection
+- Firewall configuration
+- Bash deployment and monitoring scripts
 
-### Containerized Nginx Website
+### Containerized Nginx
 
-A custom Nginx Docker image with:
+A custom Nginx container project featuring:
 
-- Versioned image releases
+- Versioned Docker images
 - Container health checks
-- Docker Compose configuration
-- Automated CI build and testing
+- Port publishing
+- Bind mounts and named volumes
+- Docker Compose lifecycle management
+- CI image build and runtime testing
 
-### Visitor Counter Application
+### Multi-Container Visitor Counter
 
-A multi-container application containing:
+A small application stack containing:
 
 - Python and Flask
 - Gunicorn application server
-- Redis data service
-- Docker internal networking
-- Persistent Redis volume
-- Service health checks
+- Redis persistence
+- Docker internal DNS and networking
+- Service dependencies and health checks
 - Failure and recovery testing
 
-### Terraform Local Infrastructure
+### Terraform Labs
 
-Terraform exercises covering:
+Infrastructure as Code exercises covering:
 
-- Local provider resources
-- Saved execution plans
-- State management
-- Drift detection and repair
-- Input variables and `.tfvars`
-- Maps, locals and `for_each`
-- Template-generated environment configurations
-- Controlled resource creation and removal
+- Local resource management
+- Multi-environment file generation
+- Reusable environment modules
+- Docker networks, volumes, images, and containers
+- Drift recovery
+- Remote state migration to HCP Terraform
+- State versioning and locking
+
+### Monitoring and Alerting Stack
+
+A reproducible observability stack containing:
+
+```text
+Node Exporter ──> Prometheus ──> Alertmanager
+                       │
+                       └───────> Grafana
+```
+
+Key capabilities:
+
+- Linux host metrics
+- Prometheus scrape targets and alert rules
+- `TargetDown` alert delivery and recovery
+- Alertmanager routing and maintenance silences
+- Persistent monitoring data
+- Provisioned Prometheus data source
+- Provisioned five-panel Grafana dashboard
+- Clean-volume rebuild testing
+
+See [monitoring/prometheus](monitoring/prometheus) for configuration and usage.
 
 ## Continuous Integration
 
-GitHub Actions automatically performs:
+GitHub Actions validates the repository on pushes and pull requests.
 
-- ShellCheck validation
+Checks include:
+
+- Bash syntax and ShellCheck
+- Required project files
+- Docker Compose configuration
 - Docker image builds
-- Container health tests
-- Multi-container integration tests
-- Terraform formatting
-- Terraform initialization and validation
-- Terraform execution plans
+- Nginx runtime tests
+- Visitor-counter integration tests
+- Terraform formatting, initialization, validation, and plans
+- Prometheus configuration and alert rules
+- Alertmanager configuration
+- Grafana provisioning YAML
+- Grafana dashboard JSON
 
-## Repository Workflow
-
-Changes follow this workflow:
+## Repository Structure
 
 ```text
-Feature branch
-    → local validation
-    → commit
-    → push
-    → pull request
-    → automated CI checks
-    → merge into main
+.
+├── .github/workflows/       # GitHub Actions
+├── docker/                  # Container projects
+├── monitoring/prometheus/   # Prometheus, Alertmanager, and Grafana
+├── scripts/                 # Bash automation and health checks
+├── systemd/                 # Service and timer units
+├── terraform/               # Terraform labs and reusable modules
+└── web/                     # Nginx webpage
+```
 
-    
+## Development Workflow
+
+```text
+Create focused branch
+        ↓
+Implement and test locally
+        ↓
+Validate configuration
+        ↓
+Commit and push
+        ↓
+Open pull request
+        ↓
+Run GitHub Actions
+        ↓
+Merge into main
+        ↓
+Delete merged branch
+```
+
+## Current Focus
+
+The current learning stage focuses on observability, alert notification routing, and operational troubleshooting.
