@@ -59,6 +59,8 @@ services:
     container_name: monitoring-webhook-receiver
     expose:
       - "8080"
+    volumes:
+      - webhook-history:/data
     healthcheck:
       test:
         - CMD
@@ -79,3 +81,4 @@ volumes:
   prometheus-data:
   alertmanager-data:
   grafana-data:
+  webhook-history:
