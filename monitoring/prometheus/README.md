@@ -69,6 +69,19 @@ Target fails
     -> Webhook receiver logs a resolved notification
 ```
 
+## Persistent Alert History
+
+The webhook receiver stores every firing and resolved notification as one JSON object per line in `/data/alerts.jsonl`.
+
+The `webhook-history` Docker named volume preserves this file when the receiver container is recreated. The private `GET /alerts` endpoint returns the 50 most recent stored notifications.
+
+Inspect recent history from inside the container:
+
+```bash
+docker compose exec webhook-receiver \
+  python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/alerts").read().decode())'
+```
+
 ## Grafana Dashboard
 
 The provisioned `DevOps Lab Overview` dashboard displays:
@@ -140,8 +153,9 @@ Docker named volumes store runtime data:
 - `prometheus-data`
 - `alertmanager-data`
 - `grafana-data`
+- `webhook-history`
 
-Runtime metrics, passwords, silences, and database files are not committed to Git. Grafana’s Prometheus data source and dashboard are stored as provisioning configuration so they can be recreated from the repository.
+Runtime metrics, passwords, silences, alert notification history, and database files are not committed to Git. Grafana’s Prometheus data source and dashboard are stored as provisioning configuration so they can be recreated from the repository.
 
 ## Validation
 
@@ -156,3 +170,4 @@ The GitHub Actions workflow validates:
 - Webhook receiver Python syntax
 - Webhook receiver image build
 - Webhook receiver health endpoint
+- Webhook receiver history persistence across container recreation

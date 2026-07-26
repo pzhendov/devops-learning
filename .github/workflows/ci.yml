@@ -147,12 +147,15 @@ jobs:
             --tag webhook-receiver:ci \
             monitoring/prometheus/webhook-receiver
 
-      - name: Test webhook receiver
+      - name: Test webhook receiver persistence
         run: |
+          docker volume create webhook-history-ci
+
           docker run \
             --detach \
             --name webhook-receiver-ci \
             --publish 127.0.0.1:18080:8080 \
+            --mount source=webhook-history-ci,target=/data \
             webhook-receiver:ci
 
           for attempt in {1..10}; do
@@ -160,19 +163,64 @@ jobs:
               http://127.0.0.1:18080/health |
               grep --quiet '"status": "healthy"'; then
               echo "Webhook receiver health check passed"
-              exit 0
+              break
             fi
 
             echo "Waiting for webhook receiver: attempt $attempt"
             sleep 1
           done
 
+          curl --fail --silent \
+            http://127.0.0.1:18080/health \
+            >/dev/null
+
+          curl --fail --silent \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{"status":"firing","commonLabels":{"alertname":"CITest"}}' \
+            http://127.0.0.1:18080/alerts |
+            jq -e '.status == "received"' \
+            >/dev/null
+
+          curl --fail --silent \
+            http://127.0.0.1:18080/alerts |
+            jq -e '
+              (.count == 1)
+              and (.notifications[-1].status == "firing")
+            ' >/dev/null
+
+          docker rm --force webhook-receiver-ci
+
+          docker run \
+            --detach \
+            --name webhook-receiver-ci \
+            --publish 127.0.0.1:18080:8080 \
+            --mount source=webhook-history-ci,target=/data \
+            webhook-receiver:ci
+
+          for attempt in {1..10}; do
+            if curl --fail --silent \
+              http://127.0.0.1:18080/alerts |
+              jq -e '
+                (.count == 1)
+                and (.notifications[-1].status == "firing")
+              ' >/dev/null; then
+              echo "Webhook history survived container recreation"
+              exit 0
+            fi
+
+            echo "Waiting for recreated receiver: attempt $attempt"
+            sleep 1
+          done
+
           docker logs webhook-receiver-ci
           exit 1
 
-      - name: Remove webhook receiver test container
+      - name: Remove webhook receiver test resources
         if: always()
-        run: docker rm --force webhook-receiver-ci
+        run: |
+          docker rm --force webhook-receiver-ci 2>/dev/null || true
+          docker volume rm webhook-history-ci 2>/dev/null || true
 
       - name: Validate Prometheus configuration and alert rules
         run: |
