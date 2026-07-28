@@ -51,6 +51,7 @@ jobs:
           grep -q "ExecStart=" systemd/nginx-healthcheck.service
           grep -q "OnUnitActiveSec=" systemd/nginx-healthcheck.timer
           grep -q "<h1>" web/index.html
+          grep -q "image: ghcr.io/pzhendov/webhook-receiver:v0.1.0" monitoring/prometheus/compose.yaml
 
       - name: Validate Docker Compose configuration
         run: docker compose --file docker/nginx/compose.yaml config
