@@ -102,10 +102,12 @@ docker compose ps
 ```
 ## Published Webhook Image
 
-Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems. Docker Compose pins the deployed receiver to `v0.1.0` rather than relying on the mutable `latest` tag. This makes deployments repeatable and allows explicit rollback to a known version.
+Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems.
+
+Docker Compose defaults to the explicit `v0.1.1` image rather than relying on the mutable `latest` tag. The `WEBHOOK_IMAGE` variable allows an operator to override that default for controlled rollback.
 
 ```bash
-docker pull ghcr.io/pzhendov/webhook-receiver:v0.1.0
+docker pull ghcr.io/pzhendov/webhook-receiver:v0.1.1
 ```
 
 The `latest` tag points to the most recently published release:
@@ -114,11 +116,37 @@ The `latest` tag points to the most recently published release:
 docker pull ghcr.io/pzhendov/webhook-receiver:latest
 ```
 
-Starting with `v0.1.1`, release images embed their version at build time. Query a running receiver from inside its container:
+Deploy the default pinned version:
+
+```bash
+docker compose pull webhook-receiver
+
+docker compose up \
+  --detach \
+  --no-deps \
+  --force-recreate \
+  webhook-receiver
+```
+
+Starting with `v0.1.1`, release images report their embedded version:
 
 ```bash
 docker compose exec webhook-receiver \
   python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/version").read().decode())'
+```
+
+Temporarily roll back to `v0.1.0`:
+
+```bash
+WEBHOOK_IMAGE=ghcr.io/pzhendov/webhook-receiver:v0.1.0 \
+  docker compose pull webhook-receiver
+
+WEBHOOK_IMAGE=ghcr.io/pzhendov/webhook-receiver:v0.1.0 \
+  docker compose up \
+    --detach \
+    --no-deps \
+    --force-recreate \
+    webhook-receiver
 ```
 
 ## Health Checks
