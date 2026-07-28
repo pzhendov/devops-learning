@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock
 
-
+APP_VERSION = os.environ.get("APP_VERSION", "development")
 HISTORY_FILE = Path(
     os.environ.get("ALERT_HISTORY_FILE", "/data/alerts.jsonl")
 )
@@ -58,6 +58,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             self.send_json(200, {"status": "healthy"})
+        elif self.path == "/version":
+            self.send_json(200, {"version": APP_VERSION})
         elif self.path == "/alerts":
             notifications = load_recent_notifications()
             self.send_json(
