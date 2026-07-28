@@ -1,5 +1,8 @@
 FROM python:3.13-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/pzhendov/devops-learning"
+LABEL org.opencontainers.image.description="Alertmanager webhook receiver with persistent JSON Lines history"
+
 WORKDIR /app
 
 COPY app.py .

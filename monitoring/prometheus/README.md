@@ -100,6 +100,19 @@ The Prometheus data source and dashboard are provisioned automatically from file
 docker compose up --detach
 docker compose ps
 ```
+## Published Webhook Image
+
+Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems.
+
+```bash
+docker pull ghcr.io/pzhendov/webhook-receiver:v0.1.0
+```
+
+The `latest` tag points to the most recently published release:
+
+```bash
+docker pull ghcr.io/pzhendov/webhook-receiver:latest
+```
 
 ## Health Checks
 
