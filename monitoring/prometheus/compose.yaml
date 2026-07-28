@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   webhook-receiver:
-    image: ghcr.io/pzhendov/webhook-receiver:v0.1.0
+    image: ${WEBHOOK_IMAGE:-ghcr.io/pzhendov/webhook-receiver:v0.1.1}
     container_name: monitoring-webhook-receiver
     expose:
       - "8080"
