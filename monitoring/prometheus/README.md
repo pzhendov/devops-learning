@@ -102,7 +102,7 @@ docker compose ps
 ```
 ## Published Webhook Image
 
-Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems.
+Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems. Docker Compose pins the deployed receiver to `v0.1.0` rather than relying on the mutable `latest` tag. This makes deployments repeatable and allows explicit rollback to a known version.
 
 ```bash
 docker pull ghcr.io/pzhendov/webhook-receiver:v0.1.0
