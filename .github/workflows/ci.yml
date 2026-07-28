@@ -33,6 +33,7 @@ jobs:
           test -s systemd/nginx-healthcheck.service
           test -s systemd/nginx-healthcheck.timer
           test -x scripts/check-tls
+          test -x scripts/backup-monitoring
           test -s .github/workflows/publish-webhook-image.yml
           test -s monitoring/prometheus/prometheus.yml
           test -s monitoring/prometheus/alerts.yml
