@@ -68,6 +68,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: monitoring/prometheus/webhook-receiver
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.value }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.metadata.outputs.tags }}

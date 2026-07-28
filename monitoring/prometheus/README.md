@@ -114,6 +114,13 @@ The `latest` tag points to the most recently published release:
 docker pull ghcr.io/pzhendov/webhook-receiver:latest
 ```
 
+Starting with `v0.1.1`, release images embed their version at build time. Query a running receiver from inside its container:
+
+```bash
+docker compose exec webhook-receiver \
+  python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/version").read().decode())'
+```
+
 ## Health Checks
 
 Prometheus:
