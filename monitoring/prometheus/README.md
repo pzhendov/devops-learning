@@ -194,6 +194,23 @@ Open:
 - Prometheus: `http://127.0.0.1:9090`
 - Alertmanager: `http://127.0.0.1:9093`
 
+## Backup and Recovery
+
+The `scripts/backup-monitoring` script creates a consistent cold backup of all monitoring volumes:
+
+- Prometheus metrics
+- Alertmanager data
+- Grafana database and configuration
+- Webhook notification history
+
+The script temporarily stops the monitoring stack, creates a compressed archive, restarts the stack, verifies the archive, and generates a SHA-256 checksum. An exit trap restarts the stack automatically if the backup fails.
+
+Run the script on the Docker host:
+
+```bash
+scripts/backup-monitoring
+```
+
 ## Persistent Data
 
 Docker named volumes store runtime data:

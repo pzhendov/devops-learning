@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+compose_directory="${COMPOSE_DIR:-$HOME/monitoring-learning/prometheus}"
+backup_directory="${BACKUP_DIR:-$HOME/monitoring-backups}"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+archive_name="monitoring-stack-${timestamp}.tar.gz"
+archive_path="${backup_directory}/${archive_name}"
+
+stack_stopped=false
+
+restart_stack() {
+  if [[ "$stack_stopped" == true ]]; then
+    echo "Restarting monitoring stack..."
+
+    docker compose \
+      --project-directory "$compose_directory" \
+      --file "$compose_directory/compose.yaml" \
+      start
+
+    stack_stopped=false
+  fi
+}
+
+trap restart_stack EXIT
+
+mkdir -p "$backup_directory"
+
+echo "Stopping monitoring stack..."
+
+stack_stopped=true
+
+docker compose \
+  --project-directory "$compose_directory" \
+  --file "$compose_directory/compose.yaml" \
+  stop
+echo "Creating backup: $archive_path"
+
+docker run --rm \
+  --volume prometheus_prometheus-data:/volumes/prometheus:ro \
+  --volume prometheus_alertmanager-data:/volumes/alertmanager:ro \
+  --volume prometheus_grafana-data:/volumes/grafana:ro \
+  --volume prometheus_webhook-history:/volumes/webhook-history:ro \
+  --volume "$backup_directory:/backup" \
+  alpine:3.22 \
+  tar -czf "/backup/$archive_name" \
+    -C /volumes \
+    prometheus alertmanager grafana webhook-history
+
+restart_stack
+trap - EXIT
+
+gzip --test "$archive_path"
+
+sha256sum "$archive_path" \
+  > "${archive_path}.sha256"
+
+sha256sum --check "${archive_path}.sha256"
+
+echo "Backup completed successfully:"
+echo "$archive_path"
