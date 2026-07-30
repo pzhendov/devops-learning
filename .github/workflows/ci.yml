@@ -32,6 +32,8 @@ jobs:
           test -s web/index.html
           test -s systemd/nginx-healthcheck.service
           test -s systemd/nginx-healthcheck.timer
+          test -s systemd/monitoring-backup.service
+          test -s systemd/monitoring-backup.timer
           test -x scripts/check-tls
           test -x scripts/backup-monitoring
           test -s .github/workflows/publish-webhook-image.yml
@@ -53,6 +55,12 @@ jobs:
           grep -q "OnUnitActiveSec=" systemd/nginx-healthcheck.timer
           grep -q "<h1>" web/index.html
           grep -Fq 'image: ${WEBHOOK_IMAGE:-ghcr.io/pzhendov/webhook-receiver:v0.1.1}' monitoring/prometheus/compose.yaml
+
+      - name: Validate monitoring backup systemd units
+        run: |
+          systemd-analyze verify \
+            systemd/monitoring-backup.service \
+            systemd/monitoring-backup.timer
 
       - name: Validate Docker Compose configuration
         run: docker compose --file docker/nginx/compose.yaml config
