@@ -9,8 +9,11 @@ User=ubuntu
 Group=ubuntu
 SupplementaryGroups=docker
 ExecCondition=/usr/bin/test -x /home/ubuntu/bin/backup-monitoring
+ExecCondition=/usr/bin/test -x /home/ubuntu/bin/prune-monitoring-backups
 Environment=HOME=/home/ubuntu
+Environment=BACKUP_RETENTION_COUNT=7
 ExecStart=/home/ubuntu/bin/backup-monitoring
+ExecStartPost=/home/ubuntu/bin/prune-monitoring-backups --apply
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7

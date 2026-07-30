@@ -238,6 +238,40 @@ journalctl --unit monitoring-backup.service --no-pager
 
 The service uses an exit trap in `scripts/backup-monitoring` to restart the monitoring stack if archive creation or validation fails.
 
+## Backup Retention
+
+The `scripts/prune-monitoring-backups` script keeps the newest seven timestamped monitoring backups by default.
+
+Safety behaviour:
+
+- Preview mode is the default and removes nothing.
+- `--apply` is required to perform deletion.
+- Only filenames matching `monitoring-stack-YYYYMMDDTHHMMSSZ.tar.gz` are managed.
+- The archive and its matching `.sha256` file are removed together.
+- Manually named milestone backups such as `monitoring-stack-v0.1.1.tar.gz` are ignored.
+- Invalid retention values stop execution with an error.
+
+Preview retention:
+
+```bash
+scripts/prune-monitoring-backups
+```
+
+Apply retention:
+
+```bash
+scripts/prune-monitoring-backups --apply
+```
+
+Override the number of timestamped backups to retain:
+
+```bash
+BACKUP_RETENTION_COUNT=14 \
+  scripts/prune-monitoring-backups --apply
+```
+
+The systemd service runs retention through `ExecStartPost`, so deletion occurs only after the backup command succeeds.
+
 ## Persistent Data
 
 Docker named volumes store runtime data:

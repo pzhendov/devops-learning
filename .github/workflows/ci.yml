@@ -36,6 +36,7 @@ jobs:
           test -s systemd/monitoring-backup.timer
           test -x scripts/check-tls
           test -x scripts/backup-monitoring
+          test -x scripts/prune-monitoring-backups
           test -s .github/workflows/publish-webhook-image.yml
           test -s monitoring/prometheus/prometheus.yml
           test -s monitoring/prometheus/alerts.yml
@@ -64,6 +65,10 @@ jobs:
           sudo install --mode=0755 \
             scripts/backup-monitoring \
             /home/ubuntu/bin/backup-monitoring
+
+          sudo install --mode=0755 \
+            scripts/prune-monitoring-backups \
+            /home/ubuntu/bin/prune-monitoring-backups
 
           systemd-analyze verify \
             systemd/monitoring-backup.service \
