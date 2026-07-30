@@ -211,6 +211,33 @@ Run the script on the Docker host:
 scripts/backup-monitoring
 ```
 
+## Scheduled Backups
+
+The monitoring backup runs automatically through systemd:
+
+- `monitoring-backup.service` defines the backup job.
+- `monitoring-backup.timer` schedules the job daily at 03:15.
+- `RandomizedDelaySec=10m` spreads the actual start between 03:15 and 03:25.
+- `Persistent=true` runs a missed backup after the VM starts again.
+- The service runs as the non-root `ubuntu` user with Docker group access.
+- Backup output and failures are recorded in the system journal.
+
+Inspect the schedule:
+
+```bash
+systemctl list-timers --all |
+  grep monitoring-backup
+```
+
+Inspect the latest execution:
+
+```bash
+systemctl status monitoring-backup.service
+journalctl --unit monitoring-backup.service --no-pager
+```
+
+The service uses an exit trap in `scripts/backup-monitoring` to restart the monitoring stack if archive creation or validation fails.
+
 ## Persistent Data
 
 Docker named volumes store runtime data:
