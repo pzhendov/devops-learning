@@ -58,6 +58,13 @@ jobs:
 
       - name: Validate monitoring backup systemd units
         run: |
+          sudo install --directory \
+            /home/ubuntu/bin
+
+          sudo install --mode=0755 \
+            scripts/backup-monitoring \
+            /home/ubuntu/bin/backup-monitoring
+
           systemd-analyze verify \
             systemd/monitoring-backup.service \
             systemd/monitoring-backup.timer
