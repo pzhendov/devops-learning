@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+backup_directory="${BACKUP_DIR:-$HOME/monitoring-backups}"
+retention_count="${BACKUP_RETENTION_COUNT:-7}"
+mode="preview"
+
+if [[ "${1:-}" == "--apply" ]]; then
+  mode="apply"
+elif [[ -n "${1:-}" ]]; then
+  echo "Usage: $0 [--apply]" >&2
+  exit 2
+fi
+
+if [[ ! "$retention_count" =~ ^[1-9][0-9]*$ ]]; then
+  echo "BACKUP_RETENTION_COUNT must be a positive whole number" >&2
+  exit 2
+fi
+
+if [[ ! -d "$backup_directory" ]]; then
+  echo "Backup directory does not exist: $backup_directory" >&2
+  exit 1
+fi
+
+shopt -s nullglob
+
+candidates=()
+
+for archive in \
+  "$backup_directory"/monitoring-stack-????????T??????Z.tar.gz; do
+  filename="${archive##*/}"
+
+  if [[ "$filename" =~ ^monitoring-stack-[0-9]{8}T[0-9]{6}Z\.tar\.gz$ ]]; then
+    candidates+=("$archive")
+  fi
+done
+
+if ((${#candidates[@]} <= retention_count)); then
+  echo "No backups need removal."
+  echo "Timestamped backups: ${#candidates[@]}"
+  echo "Retention count: $retention_count"
+  exit 0
+fi
+
+mapfile -t candidates < <(printf '%s\n' "${candidates[@]}" | sort)
+
+delete_count=$((${#candidates[@]} - retention_count))
+
+echo "Timestamped backups: ${#candidates[@]}"
+echo "Retention count: $retention_count"
+echo "Backups selected for removal: $delete_count"
+echo "Mode: $mode"
+
+for ((index = 0; index < delete_count; index++)); do
+  archive="${candidates[$index]}"
+  checksum="${archive}.sha256"
+
+  if [[ "$mode" == "preview" ]]; then
+    echo "Would remove: $archive"
+
+    if [[ -f "$checksum" ]]; then
+      echo "Would remove: $checksum"
+    fi
+  else
+    rm -- "$archive"
+    echo "Removed: $archive"
+
+    if [[ -f "$checksum" ]]; then
+      rm -- "$checksum"
+      echo "Removed: $checksum"
+    fi
+  fi
+done
