@@ -46,6 +46,9 @@ jobs:
           test -s monitoring/prometheus/grafana/dashboards/devops-lab-overview.json
           test -s monitoring/prometheus/grafana/provisioning/dashboards/provider.yml
           test -s monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml
+          test -s monitoring/prometheus/grafana/provisioning/datasources/loki.yml
+          test -s monitoring/prometheus/loki/loki.yml
+          test -s monitoring/prometheus/alloy/config.alloy
           test -s monitoring/prometheus/webhook-receiver/app.py
           test -s monitoring/prometheus/webhook-receiver/Dockerfile
           test -s monitoring/prometheus/webhook-receiver/.dockerignore
@@ -268,6 +271,21 @@ jobs:
             prom/alertmanager:v0.32.1 \
             check-config /etc/alertmanager/alertmanager.yml
 
+      - name: Validate Loki configuration
+        run: |
+          docker run --rm \
+            --mount type=bind,source="$PWD/monitoring/prometheus/loki/loki.yml",target=/etc/loki/loki.yml,readonly \
+            grafana/loki:3.7.2 \
+            -config.file=/etc/loki/loki.yml \
+            -verify-config=true
+
+      - name: Validate Alloy configuration
+        run: |
+          docker run --rm \
+            --mount type=bind,source="$PWD/monitoring/prometheus/alloy/config.alloy",target=/etc/alloy/config.alloy,readonly \
+            grafana/alloy:v1.18.0 \
+            validate /etc/alloy/config.alloy
+
       - name: Validate Grafana provisioning YAML
         run: |
           python3 -c '
@@ -277,6 +295,7 @@ jobs:
           files = [
               "monitoring/prometheus/grafana/provisioning/dashboards/provider.yml",
               "monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml",
+              "monitoring/prometheus/grafana/provisioning/datasources/loki.yml",
           ]
 
           for filename in files:

@@ -76,8 +76,42 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  loki:
+    image: grafana/loki:3.7.2
+    container_name: monitoring-loki
+    command:
+      - -config.file=/etc/loki/loki.yml
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    mem_limit: 512m
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    container_name: monitoring-alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
+    mem_limit: 256m
+    restart: unless-stopped
+
 volumes:
   prometheus-data:
   alertmanager-data:
   grafana-data:
   webhook-history:
+  loki-data:
+  alloy-data:
