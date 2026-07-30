@@ -42,11 +42,13 @@ docker run --rm \
   --volume prometheus_alertmanager-data:/volumes/alertmanager:ro \
   --volume prometheus_grafana-data:/volumes/grafana:ro \
   --volume prometheus_webhook-history:/volumes/webhook-history:ro \
+  --volume prometheus_loki-data:/volumes/loki:ro \
+  --volume prometheus_alloy-data:/volumes/alloy:ro \
   --volume "$backup_directory:/backup" \
   alpine:3.22 \
   tar -czf "/backup/$archive_name" \
     -C /volumes \
-    prometheus alertmanager grafana webhook-history
+    prometheus alertmanager grafana webhook-history loki alloy
 
 restart_stack
 trap - EXIT

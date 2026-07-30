@@ -1,14 +1,16 @@
 # Monitoring and Alerting Stack
 
-This lab provides a containerized monitoring, visualization, and alert-management stack using Docker Compose.
+This lab provides a containerized monitoring, visualization, alerting, and centralized logging stack using Docker Compose.
 
 ## Components
 
-- Prometheus collects and stores time-series metrics.
+- Prometheus collects, stores, and evaluates time-series metrics.
 - Node Exporter exposes Linux host metrics.
-- Alertmanager receives, groups, silences, and routes alerts.
-- Grafana queries Prometheus and visualizes the collected metrics.
-- The webhook receiver accepts and logs firing and resolved Alertmanager notifications.
+- Alertmanager groups, silences, and routes alert notifications.
+- The webhook receiver accepts and stores firing and resolved notifications.
+- Alloy collects Docker container logs and forwards them to Loki.
+- Loki stores and queries centralized logs.
+- Grafana visualizes Prometheus metrics and explores Loki logs.
 
 ## Architecture
 
@@ -16,13 +18,12 @@ This lab provides a containerized monitoring, visualization, and alert-managemen
 Linux host
     |
     v
-Node Exporter
-    |
-    v
-Prometheus --------> Alertmanager --------> Webhook Receiver
-    |
-    v
-Grafana
+Node Exporter ---> Prometheus ---> Alertmanager ---> Webhook Receiver
+                       |
+                       v
+                    Grafana
+
+Docker containers ---> Alloy ---> Loki ---> Grafana
 ```
 
 ## Monitored Targets
@@ -94,12 +95,25 @@ The provisioned `DevOps Lab Overview` dashboard displays:
 
 The Prometheus data source and dashboard are provisioned automatically from files under `grafana/`.
 
+## Centralized Logging
+
+Alloy discovers running Docker containers, attaches container and Compose service labels, and forwards their logs to Loki. Loki stores the logs in the persistent `loki-data` volume with a seven-day retention period.
+
+Grafana provisions Loki automatically as a data source, allowing container logs to be searched in Explore with LogQL:
+
+```logql
+{container="monitoring-webhook-receiver"} |= `GET /health`
+```
+
+Loki and Alloy management ports bind only to the VM loopback address. Alloy reads the Docker API through `/var/run/docker.sock`; this privileged access is suitable for this isolated learning VM and should be carefully restricted in production.
+
 ## Start the Stack
 
 ```bash
 docker compose up --detach
 docker compose ps
 ```
+
 ## Published Webhook Image
 
 Release builds of the webhook receiver are published to GitHub Container Registry for AMD64 and ARM64 systems.
@@ -169,6 +183,18 @@ Grafana:
 curl --fail http://127.0.0.1:3000/api/health
 ```
 
+Loki:
+
+```bash
+curl --fail http://127.0.0.1:3100/ready
+```
+
+Alloy:
+
+```bash
+curl --fail http://127.0.0.1:12345/-/ready
+```
+
 Webhook receiver:
 
 ```bash
@@ -185,6 +211,8 @@ ssh -N \
   -L 3000:127.0.0.1:3000 \
   -L 9090:127.0.0.1:9090 \
   -L 9093:127.0.0.1:9093 \
+  -L 3100:127.0.0.1:3100 \
+  -L 12345:127.0.0.1:12345 \
   devops-lab
 ```
 
@@ -193,6 +221,8 @@ Open:
 - Grafana: `http://127.0.0.1:3000`
 - Prometheus: `http://127.0.0.1:9090`
 - Alertmanager: `http://127.0.0.1:9093`
+- Loki API: `http://127.0.0.1:3100`
+- Alloy interface: `http://127.0.0.1:12345`
 
 ## Backup and Recovery
 
@@ -202,6 +232,8 @@ The `scripts/backup-monitoring` script creates a consistent cold backup of all m
 - Alertmanager data
 - Grafana database and configuration
 - Webhook notification history
+- Loki centralized logs
+- Alloy collection checkpoints
 
 The script temporarily stops the monitoring stack, creates a compressed archive, restarts the stack, verifies the archive, and generates a SHA-256 checksum. An exit trap restarts the stack automatically if the backup fails.
 
@@ -280,8 +312,10 @@ Docker named volumes store runtime data:
 - `alertmanager-data`
 - `grafana-data`
 - `webhook-history`
+- `loki-data`
+- `alloy-data`
 
-Runtime metrics, passwords, silences, alert notification history, and database files are not committed to Git. Grafana’s Prometheus data source and dashboard are stored as provisioning configuration so they can be recreated from the repository.
+Runtime metrics, logs, collection checkpoints, passwords, silences, alert notification history, and database files are not committed to Git. Grafana’s Prometheus and Loki data sources and dashboard are stored as provisioning configuration so they can be recreated from the repository.
 
 ## Validation
 
@@ -297,3 +331,5 @@ The GitHub Actions workflow validates:
 - Webhook receiver image build
 - Webhook receiver health endpoint
 - Webhook receiver history persistence across container recreation
+- Loki configuration
+- Alloy configuration
