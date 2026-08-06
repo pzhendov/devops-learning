@@ -33,16 +33,24 @@ Prometheus collects metrics from:
 - Prometheus itself
 - Node Exporter
 - Alertmanager
+- Loki
+- Alloy
 
 The `up` metric reports whether each target is reachable.
 
-## Alert Rule
+## Alert Rules
 
-The `TargetDown` rule fires when a monitored target remains unavailable for more than 30 seconds.
+The alert rules distinguish general target failures from logging-pipeline failures:
+
+- `TargetDown` warns when a non-logging target remains unavailable for more than 30 seconds.
+- `LokiUnavailable` raises a critical alert when centralized log storage is unavailable for more than one minute.
+- `AlloyUnavailable` raises a warning when Docker log collection is unavailable for more than one minute.
 
 ```text
 inactive -> pending -> firing -> resolved
 ```
+
+The Loki and Alloy alerts were tested through controlled container stops and recoveries. Alertmanager delivered both firing and resolved notifications to the webhook receiver.
 
 Alertmanager silences can suppress notifications during planned maintenance without disabling metric collection or alert evaluation.
 
