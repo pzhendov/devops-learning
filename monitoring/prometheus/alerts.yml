@@ -2,7 +2,7 @@ groups:
   - name: target-availability
     rules:
       - alert: TargetDown
-        expr: up == 0
+        expr: up{job!~"loki|alloy"} == 0
         for: 30s
         labels:
           severity: warning
@@ -11,3 +11,27 @@ groups:
           description: >-
             The {{ $labels.job }} target {{ $labels.instance }}
             has been unreachable for more than 30 seconds.
+
+  - name: logging-pipeline
+    rules:
+      - alert: LokiUnavailable
+        expr: up{job="loki"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Loki is unavailable
+          description: >-
+            Prometheus has been unable to scrape Loki at
+            {{ $labels.instance }} for more than one minute.
+
+      - alert: AlloyUnavailable
+        expr: up{job="alloy"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Alloy is unavailable
+          description: >-
+            Prometheus has been unable to scrape Alloy at
+            {{ $labels.instance }} for more than one minute.

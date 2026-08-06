@@ -59,6 +59,10 @@ jobs:
           grep -q "OnUnitActiveSec=" systemd/nginx-healthcheck.timer
           grep -q "<h1>" web/index.html
           grep -Fq 'image: ${WEBHOOK_IMAGE:-ghcr.io/pzhendov/webhook-receiver:v0.1.1}' monitoring/prometheus/compose.yaml
+          grep -q "job_name: loki" monitoring/prometheus/prometheus.yml
+          grep -q "job_name: alloy" monitoring/prometheus/prometheus.yml
+          grep -q "alert: LokiUnavailable" monitoring/prometheus/alerts.yml
+          grep -q "alert: AlloyUnavailable" monitoring/prometheus/alerts.yml
 
       - name: Validate monitoring backup systemd units
         run: |
