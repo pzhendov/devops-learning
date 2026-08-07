@@ -44,6 +44,7 @@ jobs:
           test -s monitoring/prometheus/compose.yaml
           test -s monitoring/prometheus/README.md
           test -s monitoring/prometheus/grafana/dashboards/devops-lab-overview.json
+          test -s monitoring/prometheus/grafana/dashboards/container-logs.json
           test -s monitoring/prometheus/grafana/provisioning/dashboards/provider.yml
           test -s monitoring/prometheus/grafana/provisioning/datasources/prometheus.yml
           test -s monitoring/prometheus/grafana/provisioning/datasources/loki.yml
@@ -322,6 +323,27 @@ jobs:
               | all(. == "prometheus")
             )
           ' monitoring/prometheus/grafana/dashboards/devops-lab-overview.json \
+            >/dev/null
+
+      - name: Validate Grafana container logs dashboard JSON
+        run: |
+          jq -e '
+            (.uid == "container-logs")
+            and (.id == null)
+            and ((.panels | length) == 3)
+            and (
+              [.templating.list[] | select(.name == "container")]
+              | length == 1
+            )
+            and (
+              [.. | objects | select(.type? == "loki") | .uid]
+              | length > 0
+            )
+            and (
+              [.. | objects | select(.type? == "loki") | .uid]
+              | all(. == "loki")
+            )
+          ' monitoring/prometheus/grafana/dashboards/container-logs.json \
             >/dev/null
 
       - name: Install Terraform

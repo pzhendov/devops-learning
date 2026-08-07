@@ -91,7 +91,7 @@ docker compose exec webhook-receiver \
   python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/alerts").read().decode())'
 ```
 
-## Grafana Dashboard
+## Grafana Dashboards
 
 The provisioned `DevOps Lab Overview` dashboard displays:
 
@@ -101,7 +101,15 @@ The provisioned `DevOps Lab Overview` dashboard displays:
 - Root filesystem usage
 - Prometheus target availability
 
-The Prometheus data source and dashboard are provisioned automatically from files under `grafana/`.
+The provisioned `Recent Container Logs` dashboard provides:
+
+- A dynamic Docker container selector populated from Loki
+- Recent log lines for the selected container
+- Log volume per minute
+- A five-minute count of lines containing `error`, `failed`, or `exception`
+- Green and red thresholds for quick error detection
+
+The Prometheus and Loki data sources and both dashboards are provisioned automatically from files under `grafana/`.
 
 ## Centralized Logging
 
