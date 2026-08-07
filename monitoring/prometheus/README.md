@@ -123,6 +123,22 @@ Grafana provisions Loki automatically as a data source, allowing container logs 
 
 Loki and Alloy management ports bind only to the VM loopback address. Alloy reads the Docker API through `/var/run/docker.sock`; this privileged access is suitable for this isolated learning VM and should be carefully restricted in production.
 
+## Log-Based Alerting
+
+Grafana evaluates the provisioned `ContainerErrorLogsDetected` rule against Loki once per minute. The rule creates one alert instance per container when log lines containing `error`, `failed`, or `exception` are detected during the previous five minutes.
+
+The rule uses:
+
+- A one-minute pending period to reduce transient alerts
+- A one-minute recovery period before returning to normal
+- `severity=warning` and `category=logging` labels
+- `No data` as a normal state
+- The provisioned `local-webhook` contact point for firing and resolved notifications
+
+Grafana, Loki, Alloy, and the webhook receiver are excluded from the query to prevent monitoring components and notification payloads from retriggering the alert.
+
+The rule and contact point are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
+
 ## Start the Stack
 
 ```bash
