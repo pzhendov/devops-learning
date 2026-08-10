@@ -68,6 +68,7 @@ jobs:
           grep -q "job_name: loki" monitoring/prometheus/prometheus.yml
           grep -q "job_name: alloy" monitoring/prometheus/prometheus.yml
           grep -q "alert: LokiUnavailable" monitoring/prometheus/alerts.yml
+          grep -q "alert: LokiDegraded" monitoring/prometheus/alerts.yml
           grep -q "alert: AlloyUnavailable" monitoring/prometheus/alerts.yml
 
       - name: Validate monitoring backup systemd units
@@ -280,6 +281,35 @@ jobs:
             --mount type=bind,source="$PWD/monitoring/prometheus/alertmanager.yml",target=/etc/alertmanager/alertmanager.yml,readonly \
             prom/alertmanager:v0.32.1 \
             check-config /etc/alertmanager/alertmanager.yml
+
+      - name: Validate Alertmanager inhibition semantics
+        run: |
+          python3 -c '
+          from pathlib import Path
+          import yaml
+
+          config = yaml.safe_load(
+              Path(
+                  "monitoring/prometheus/alertmanager.yml"
+              ).read_text(encoding="utf-8")
+          )
+
+          rules = config.get("inhibit_rules", [])
+          assert len(rules) == 1
+
+          rule = rules[0]
+          assert rule["source_matchers"] == [
+              "alertname=\"LokiUnavailable\"",
+              "severity=\"critical\"",
+          ]
+          assert rule["target_matchers"] == [
+              "alertname=\"LokiDegraded\"",
+              "severity=\"warning\"",
+          ]
+          assert rule["equal"] == ["job", "instance"]
+
+          print("Valid Alertmanager inhibition semantics")
+          '
 
       - name: Validate Loki configuration
         run: |

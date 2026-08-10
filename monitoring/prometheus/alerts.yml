@@ -14,6 +14,17 @@ groups:
 
   - name: logging-pipeline
     rules:
+      - alert: LokiDegraded
+        expr: up{job="loki"} == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: Loki availability is degraded
+          description: >-
+            Prometheus has been unable to scrape Loki at
+            {{ $labels.instance }} for more than 30 seconds.
+
       - alert: LokiUnavailable
         expr: up{job="loki"} == 0
         for: 1m
