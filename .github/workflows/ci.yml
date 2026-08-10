@@ -485,8 +485,10 @@ jobs:
                 | select(
                     (.orgId == 1)
                     and (.receiver == "local-webhook")
-                    and (.group_by | index("grafana_folder") != null)
-                    and (.group_by | index("alertname") != null)
+                    and (.group_by == ["grafana_folder", "alertname"])
+                    and (.group_wait == "30s")
+                    and (.group_interval == "5m")
+                    and (.repeat_interval == "4h")
                   )
               ]
               | length == 1

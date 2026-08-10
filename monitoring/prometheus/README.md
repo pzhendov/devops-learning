@@ -151,6 +151,19 @@ Grafana, Loki, Alloy, and the webhook receiver are excluded from both queries to
 
 The rules, contact points, and notification policy tree are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
 
+## Notification Grouping
+
+Grafana groups related alert instances before sending notifications. The provisioned policy uses:
+
+- `grafana_folder` and `alertname` as grouping labels
+- A 30-second wait before the first notification
+- A five-minute interval before sending group updates
+- A four-hour reminder interval for alerts that remain firing
+
+The `container` label is intentionally excluded from the grouping labels. When the same rule fires for several containers, Grafana sends one notification containing multiple alert instances instead of one notification per container.
+
+A controlled test with two containers confirmed that Grafana delivered one grouped firing notification and one grouped resolved notification. Both payloads retained the individual container labels for investigation.
+
 ## Start the Stack
 
 ```bash
