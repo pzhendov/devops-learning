@@ -51,6 +51,7 @@ jobs:
           test -s monitoring/prometheus/grafana/provisioning/alerting/alert-rules.json
           test -s monitoring/prometheus/grafana/provisioning/alerting/contact-points.json
           test -s monitoring/prometheus/grafana/provisioning/alerting/warning-contact-point.json
+          test -s monitoring/prometheus/grafana/provisioning/alerting/critical-contact-point.json
           test -s monitoring/prometheus/grafana/provisioning/alerting/notification-policies.json
           test -s monitoring/prometheus/loki/loki.yml
           test -s monitoring/prometheus/alloy/config.alloy
@@ -392,6 +393,32 @@ jobs:
             >/dev/null
 
           jq -e '
+            ([.groups[].rules[]
+              | select(
+                  (.uid == "critical-container-logs")
+                  and (.title == "CriticalContainerLogsDetected")
+                  and (.condition == "C")
+                  and (.noDataState == "OK")
+                  and (.execErrState == "Error")
+                  and (.for == "1m")
+                  and (.keepFiringFor == "1m")
+                  and (.labels.severity == "critical")
+                  and (.labels.category == "logging")
+                  and (.notification_settings == null)
+                )
+            ] | length == 1)
+            and (
+              [.groups[].rules[].data[]
+                | select(.refId == "A")
+                | .model.expr
+                | contains("critical|fatal|panic")
+              ]
+              | any
+            )
+          ' monitoring/prometheus/grafana/provisioning/alerting/alert-rules.json \
+            >/dev/null
+
+          jq -e '
             (.apiVersion == 1)
             and (
               [.contactPoints[]
@@ -410,6 +437,7 @@ jobs:
             )
           ' monitoring/prometheus/grafana/provisioning/alerting/contact-points.json \
             >/dev/null
+
           jq -e '
             (.apiVersion == 1)
             and (
@@ -433,6 +461,26 @@ jobs:
           jq -e '
             (.apiVersion == 1)
             and (
+              [.contactPoints[]
+                | select(.name == "critical-webhook")
+                | .receivers[]
+                | select(
+                    (.type == "webhook")
+                    and (
+                      .settings.url ==
+                      "http://webhook-receiver:8080/alerts"
+                    )
+                    and (.disableResolveMessage == false)
+                  )
+              ]
+              | length == 1
+            )
+          ' monitoring/prometheus/grafana/provisioning/alerting/critical-contact-point.json \
+            >/dev/null
+
+          jq -e '
+            (.apiVersion == 1)
+            and (
               [.policies[]
                 | select(
                     (.orgId == 1)
@@ -450,6 +498,18 @@ jobs:
                     and (
                       .object_matchers ==
                       [["severity", "=", "warning"]]
+                    )
+                  )
+              ]
+              | length == 1
+            )
+            and (
+              [.policies[].routes[]
+                | select(
+                    (.receiver == "critical-webhook")
+                    and (
+                      .object_matchers ==
+                      [["severity", "=", "critical"]]
                     )
                   )
               ]

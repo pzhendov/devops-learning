@@ -1,0 +1,1 @@
+{"apiVersion":1,"contactPoints":[{"orgId":1,"name":"critical-webhook","receivers":[{"uid":"afuh52wlsmk8wf","type":"webhook","settings":{"url":"http://webhook-receiver:8080/alerts"},"disableResolveMessage":false}]}]}

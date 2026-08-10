@@ -125,27 +125,31 @@ Loki and Alloy management ports bind only to the VM loopback address. Alloy read
 
 ## Log-Based Alerting
 
-Grafana evaluates the provisioned `ContainerErrorLogsDetected` rule against Loki once per minute. The rule creates one alert instance per container when log lines containing `error`, `failed`, or `exception` are detected during the previous five minutes.
+Grafana evaluates two provisioned log rules against Loki once per minute:
 
-The rule uses:
+- `ContainerErrorLogsDetected` detects `error`, `failed`, or `exception` messages and applies `severity=warning`.
+- `CriticalContainerLogsDetected` detects `critical`, `fatal`, or `panic` messages and applies `severity=critical`.
+
+Both rules create one alert instance per affected container using a five-minute log window. They use:
 
 - A one-minute pending period to reduce transient alerts
 - A one-minute recovery period before returning to normal
-- `severity=warning` and `category=logging` labels
+- The `category=logging` label
 - `No data` as a normal state
-- Notification-policy routing instead of a contact point selected directly by the rule
+- Notification-policy routing instead of contact points selected directly by the rules
 
 The provisioned notification policy tree routes alerts using their labels:
 
 - Alerts with `severity=warning` are delivered to `warning-webhook`.
+- Alerts with `severity=critical` are delivered to `critical-webhook`.
 - Alerts that match no child policy fall back to `local-webhook`.
 - Firing and resolved notifications follow the same selected route.
 
-Both contact points use the private webhook receiver in this learning lab. Their different names make the selected route visible in the webhook payload.
+All three contact points use the private webhook receiver in this learning lab. Their different names make the selected severity route visible in each webhook payload. In production, critical alerts would normally use a more urgent destination such as an on-call paging service.
 
-Grafana, Loki, Alloy, and the webhook receiver are excluded from the query to prevent monitoring components and notification payloads from retriggering the alert.
+Grafana, Loki, Alloy, and the webhook receiver are excluded from both queries to prevent monitoring components and notification payloads from retriggering the alerts.
 
-The rule, contact points, and notification policy tree are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
+The rules, contact points, and notification policy tree are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
 
 ## Start the Stack
 
