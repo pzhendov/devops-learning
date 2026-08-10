@@ -43,6 +43,7 @@ The `up` metric reports whether each target is reachable.
 The alert rules distinguish general target failures from logging-pipeline failures:
 
 - `TargetDown` warns when a non-logging target remains unavailable for more than 30 seconds.
+- `LokiDegraded` raises a warning when centralized log storage is unavailable for more than 30 seconds.
 - `LokiUnavailable` raises a critical alert when centralized log storage is unavailable for more than one minute.
 - `AlloyUnavailable` raises a warning when Docker log collection is unavailable for more than one minute.
 
@@ -163,6 +164,27 @@ Grafana groups related alert instances before sending notifications. The provisi
 The `container` label is intentionally excluded from the grouping labels. When the same rule fires for several containers, Grafana sends one notification containing multiple alert instances instead of one notification per container.
 
 A controlled test with two containers confirmed that Grafana delivered one grouped firing notification and one grouped resolved notification. Both payloads retained the individual container labels for investigation.
+
+## Silences and Inhibition
+
+Alertmanager silences temporarily suppress notifications that match selected labels. They are intended for planned maintenance and do not stop Prometheus from collecting metrics or evaluating alert rules.
+
+A controlled Alloy maintenance test confirmed that `AlloyUnavailable` continued firing in Prometheus while an active `alertname="AlloyUnavailable"` silence prevented firing and resolved notifications from reaching the webhook receiver.
+
+Silences depend on accurate system time. The VM clock must be synchronized so that Alertmanager interprets silence start and end timestamps correctly.
+
+Inhibition automatically suppresses a lower-priority alert while a related higher-priority alert is firing. The configured escalation sequence is:
+
+```text
+Loki unavailable for 30 seconds
+    -> LokiDegraded warning fires
+    -> Loki unavailable for one minute
+    -> LokiUnavailable critical alert fires
+    -> Alertmanager inhibits the warning for the same job and instance
+```
+The warning provides early notice. If the outage continues, the critical alert becomes the primary notification and prevents repeated lower-priority noise. Both alerts remain visible in Prometheus because inhibition affects notification delivery, not rule evaluation.
+
+The inhibition rule is stored in `alertmanager.yml` and matches the source and target using their alert names and severities. The `job` and `instance` labels must be equal, preventing one Loki failure from suppressing an unrelated alert.
 
 ## Start the Stack
 
