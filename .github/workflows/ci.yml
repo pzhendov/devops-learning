@@ -50,6 +50,8 @@ jobs:
           test -s monitoring/prometheus/grafana/provisioning/datasources/loki.yml
           test -s monitoring/prometheus/grafana/provisioning/alerting/alert-rules.json
           test -s monitoring/prometheus/grafana/provisioning/alerting/contact-points.json
+          test -s monitoring/prometheus/grafana/provisioning/alerting/warning-contact-point.json
+          test -s monitoring/prometheus/grafana/provisioning/alerting/notification-policies.json
           test -s monitoring/prometheus/loki/loki.yml
           test -s monitoring/prometheus/alloy/config.alloy
           test -s monitoring/prometheus/webhook-receiver/app.py
@@ -373,7 +375,7 @@ jobs:
                     and (.keepFiringFor == "1m")
                     and (.labels.severity == "warning")
                     and (.labels.category == "logging")
-                    and (.notification_settings.receiver == "local-webhook")
+                    and (.notification_settings == null)
                   )
               ]
               | length == 1
@@ -407,6 +409,53 @@ jobs:
               | length == 1
             )
           ' monitoring/prometheus/grafana/provisioning/alerting/contact-points.json \
+            >/dev/null
+          jq -e '
+            (.apiVersion == 1)
+            and (
+              [.contactPoints[]
+                | select(.name == "warning-webhook")
+                | .receivers[]
+                | select(
+                    (.type == "webhook")
+                    and (
+                      .settings.url ==
+                      "http://webhook-receiver:8080/alerts"
+                    )
+                    and (.disableResolveMessage == false)
+                  )
+              ]
+              | length == 1
+            )
+          ' monitoring/prometheus/grafana/provisioning/alerting/warning-contact-point.json \
+            >/dev/null
+
+          jq -e '
+            (.apiVersion == 1)
+            and (
+              [.policies[]
+                | select(
+                    (.orgId == 1)
+                    and (.receiver == "local-webhook")
+                    and (.group_by | index("grafana_folder") != null)
+                    and (.group_by | index("alertname") != null)
+                  )
+              ]
+              | length == 1
+            )
+            and (
+              [.policies[].routes[]
+                | select(
+                    (.receiver == "warning-webhook")
+                    and (
+                      .object_matchers ==
+                      [["severity", "=", "warning"]]
+                    )
+                  )
+              ]
+              | length == 1
+            )
+          ' monitoring/prometheus/grafana/provisioning/alerting/notification-policies.json \
             >/dev/null
 
       - name: Install Terraform

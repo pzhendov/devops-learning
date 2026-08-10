@@ -133,11 +133,19 @@ The rule uses:
 - A one-minute recovery period before returning to normal
 - `severity=warning` and `category=logging` labels
 - `No data` as a normal state
-- The provisioned `local-webhook` contact point for firing and resolved notifications
+- Notification-policy routing instead of a contact point selected directly by the rule
+
+The provisioned notification policy tree routes alerts using their labels:
+
+- Alerts with `severity=warning` are delivered to `warning-webhook`.
+- Alerts that match no child policy fall back to `local-webhook`.
+- Firing and resolved notifications follow the same selected route.
+
+Both contact points use the private webhook receiver in this learning lab. Their different names make the selected route visible in the webhook payload.
 
 Grafana, Loki, Alloy, and the webhook receiver are excluded from the query to prevent monitoring components and notification payloads from retriggering the alert.
 
-The rule and contact point are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
+The rule, contact points, and notification policy tree are provisioned from files under `grafana/provisioning/alerting/`. File-provisioned alerting resources are read-only in the Grafana interface and can be recreated from the repository.
 
 ## Start the Stack
 
