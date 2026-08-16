@@ -186,6 +186,27 @@ The warning provides early notice. If the outage continues, the critical alert b
 
 The inhibition rule is stored in `alertmanager.yml` and matches the source and target using their alert names and severities. The `job` and `instance` labels must be equal, preventing one Loki failure from suppressing an unrelated alert.
 
+## Recording Rules, SLIs, and SLOs
+
+Prometheus recording rules precompute frequently used expressions and store their results as new time series. This makes dashboards and alerts faster and keeps the reliability calculations consistent.
+
+The availability SLI measures the proportion of successful `up` samples observed for each monitored job:
+
+- `job:sli_availability:ratio_5m` provides a responsive five-minute view.
+- `job:sli_availability:ratio_1h` provides the one-hour evaluation window used by this lab.
+- `slo:availability:target` records the availability objective of `0.99`, or 99%.
+- `job:slo_error_budget_remaining:ratio_1h` records the remaining error-budget ratio.
+- `job:slo_error_budget_burn_rate:ratio_1h` records how quickly the permitted error budget is being consumed.
+
+The SLI is the reliability actually measured, while the SLO is the reliability target. With a 99% SLO, the permitted error budget is 1%.
+
+```text
+SLI = measured availability
+SLO = required availability
+error budget = 1 - SLO
+burn rate = observed failure ratio / permitted failure ratio
+```
+
 ## Start the Stack
 
 ```bash

@@ -46,3 +46,19 @@ groups:
           description: >-
             Prometheus has been unable to scrape Alloy at
             {{ $labels.instance }} for more than one minute.
+
+  - name: service-level-objectives
+    rules:
+      - alert: AvailabilitySLOBreach
+        expr: >-
+          job:sli_availability:ratio_1h
+          < scalar(slo:availability:target)
+        for: 2m
+        labels:
+          severity: warning
+          category: slo
+        annotations:
+          summary: Availability SLO breached for {{ $labels.job }}
+          description: >-
+            The one-hour availability ratio for {{ $labels.job }}
+            is {{ $value | humanizePercentage }}, below the 99% SLO.
