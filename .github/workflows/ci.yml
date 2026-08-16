@@ -40,6 +40,7 @@ jobs:
           test -s .github/workflows/publish-webhook-image.yml
           test -s monitoring/prometheus/prometheus.yml
           test -s monitoring/prometheus/alerts.yml
+          test -s monitoring/prometheus/recording-rules.yml
           test -s monitoring/prometheus/alertmanager.yml
           test -s monitoring/prometheus/compose.yaml
           test -s monitoring/prometheus/README.md
@@ -271,8 +272,67 @@ jobs:
             --entrypoint promtool \
             --mount type=bind,source="$PWD/monitoring/prometheus/prometheus.yml",target=/etc/prometheus/prometheus.yml,readonly \
             --mount type=bind,source="$PWD/monitoring/prometheus/alerts.yml",target=/etc/prometheus/alerts.yml,readonly \
+            --mount type=bind,source="$PWD/monitoring/prometheus/recording-rules.yml",target=/etc/prometheus/recording-rules.yml,readonly \
             prom/prometheus:v3.11.2 \
             check config /etc/prometheus/prometheus.yml
+
+      - name: Validate availability SLI and SLO semantics
+        run: |
+          python3 -c '
+          from pathlib import Path
+          import yaml
+
+          recording = yaml.safe_load(
+              Path(
+                  "monitoring/prometheus/recording-rules.yml"
+              ).read_text(encoding="utf-8")
+          )
+
+          recorded = {
+              rule["record"]: rule["expr"]
+              for group in recording["groups"]
+              for rule in group["rules"]
+          }
+
+          required = {
+              "job:sli_availability:ratio_5m",
+              "job:sli_availability:ratio_1h",
+              "slo:availability:target",
+              "job:slo_error_budget_remaining:ratio_1h",
+              "job:slo_error_budget_burn_rate:ratio_1h",
+          }
+
+          assert required == set(recorded)
+          assert recorded["slo:availability:target"] == "vector(0.99)"
+
+          alerts = yaml.safe_load(
+              Path(
+                  "monitoring/prometheus/alerts.yml"
+              ).read_text(encoding="utf-8")
+          )
+
+          rules = [
+              rule
+              for group in alerts["groups"]
+              for rule in group["rules"]
+          ]
+
+          slo_alert = next(
+              rule
+              for rule in rules
+              if rule.get("alert") == "AvailabilitySLOBreach"
+          )
+
+          assert slo_alert["for"] == "2m"
+          assert slo_alert["labels"] == {
+              "severity": "warning",
+              "category": "slo",
+          }
+          assert "job:sli_availability:ratio_1h" in slo_alert["expr"]
+          assert "slo:availability:target" in slo_alert["expr"]
+
+          print("Valid availability SLI and SLO semantics")
+          '
 
       - name: Validate Alertmanager configuration
         run: |
