@@ -90,7 +90,7 @@ groups:
   - name: endpoint-availability
     rules:
       - alert: EndpointProbeFailed
-        expr: probe_success{job="blackbox-http"} == 0
+        expr: probe_success{job=~"blackbox-http|blackbox-https"} == 0
         for: 1m
         labels:
           severity: critical
@@ -100,3 +100,32 @@ groups:
           description: >-
             Blackbox Exporter has been unable to complete a successful
             HTTP probe of {{ $labels.instance }} for more than one minute.
+
+      - alert: TLSCertificateExpiringSoon
+        expr: >-
+          instance:tls_certificate_expiry:days < 30
+          and
+          instance:tls_certificate_expiry:days >= 14
+        for: 1m
+        labels:
+          severity: warning
+          category: tls
+        annotations:
+          summary: TLS certificate expires soon for {{ $labels.instance }}
+          description: >-
+            The earliest certificate in the TLS chain for
+            {{ $labels.instance }} expires in approximately
+            {{ $value | humanize }} days.
+
+      - alert: TLSCertificateExpiryCritical
+        expr: instance:tls_certificate_expiry:days < 14
+        for: 1m
+        labels:
+          severity: critical
+          category: tls
+        annotations:
+          summary: TLS certificate expiry is critical for {{ $labels.instance }}
+          description: >-
+            The earliest certificate in the TLS chain for
+            {{ $labels.instance }} expires in approximately
+            {{ $value | humanize }} days.

@@ -57,6 +57,7 @@ jobs:
           test -s monitoring/prometheus/loki/loki.yml
           test -s monitoring/prometheus/alloy/config.alloy
           test -s monitoring/prometheus/blackbox/blackbox.yml
+          test -s monitoring/prometheus/tests/tls-alerts.test.yml
           test -s monitoring/prometheus/webhook-receiver/app.py
           test -s monitoring/prometheus/webhook-receiver/Dockerfile
           test -s monitoring/prometheus/webhook-receiver/.dockerignore
@@ -74,6 +75,9 @@ jobs:
           grep -q "alert: AlloyUnavailable" monitoring/prometheus/alerts.yml
           grep -q "job_name: blackbox-http" monitoring/prometheus/prometheus.yml
           grep -q "alert: EndpointProbeFailed" monitoring/prometheus/alerts.yml
+          grep -q "job_name: blackbox-https" monitoring/prometheus/prometheus.yml
+          grep -q "alert: TLSCertificateExpiringSoon" monitoring/prometheus/alerts.yml
+          grep -q "alert: TLSCertificateExpiryCritical" monitoring/prometheus/alerts.yml
 
       - name: Validate monitoring backup systemd units
         run: |
@@ -279,6 +283,14 @@ jobs:
             prom/prometheus:v3.11.2 \
             check config /etc/prometheus/prometheus.yml
 
+      - name: Test TLS certificate alert rules
+        run: |
+          docker run --rm \
+            --entrypoint promtool \
+            --mount type=bind,source="$PWD/monitoring/prometheus",target=/work,readonly \
+            prom/prometheus:v3.11.2 \
+            test rules /work/tests/tls-alerts.test.yml
+
       - name: Validate availability SLI and SLO semantics
         run: |
           python3 -c '
@@ -303,6 +315,7 @@ jobs:
               "job:sli_availability:ratio_1h",
               "instance:sli_http_availability:ratio_5m",
               "instance:sli_http_availability:ratio_1h",
+              "instance:tls_certificate_expiry:days",
               "slo:availability:target",
               "job:slo_error_budget_burn_rate:ratio_5m",
               "job:slo_error_budget_burn_rate:ratio_15m",
@@ -330,13 +343,33 @@ jobs:
 
           endpoint = rules["EndpointProbeFailed"]
           assert endpoint["expr"] == (
-              "probe_success{job=\"blackbox-http\"} == 0"
+              "probe_success{job=~"
+              "\"blackbox-http|blackbox-https\"} == 0"
           )
           assert endpoint["for"] == "1m"
           assert endpoint["labels"] == {
               "severity": "critical",
               "category": "endpoint",
           }
+
+          tls_warning = rules["TLSCertificateExpiringSoon"]
+          assert tls_warning["for"] == "1m"
+          assert tls_warning["labels"] == {
+              "severity": "warning",
+              "category": "tls",
+          }
+          assert "expiry:days < 30" in tls_warning["expr"]
+          assert "expiry:days >= 14" in tls_warning["expr"]
+
+          tls_critical = rules["TLSCertificateExpiryCritical"]
+          assert tls_critical["for"] == "1m"
+          assert tls_critical["labels"] == {
+              "severity": "critical",
+              "category": "tls",
+          }
+          assert tls_critical["expr"] == (
+              "instance:tls_certificate_expiry:days < 14"
+          )
 
           fast = rules["AvailabilityErrorBudgetFastBurn"]
           assert fast["for"] == "1m"

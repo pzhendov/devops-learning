@@ -155,6 +155,35 @@ The endpoint recording rules provide:
 
 A controlled Grafana outage confirmed the complete lifecycle: the Blackbox scrape remained healthy, the Grafana probe failed, the alert fired, and a resolved notification was delivered after Grafana recovered.
 
+## TLS Certificate Monitoring
+
+The `blackbox-https` Prometheus job probes `https://github.com/pzhendov/devops-learning` using the dedicated `https_2xx` Blackbox module.
+
+The module requires HTTPS, validates the certificate chain and hostname, and requires TLS 1.2 or newer. Certificate verification is intentionally not disabled.
+
+Important probe metrics include:
+
+- `probe_success` for the overall HTTPS probe result
+- `probe_http_ssl` to confirm that TLS was used
+- `probe_tls_version_info` for the negotiated TLS version
+- `probe_ssl_earliest_cert_expiry` for the earliest certificate-chain expiry as a Unix timestamp
+
+The `instance:tls_certificate_expiry:days` recording rule converts the expiry timestamp into remaining days:
+
+```text
+(certificate expiry timestamp - current timestamp) / 86400
+```
+
+Certificate alerts use non-overlapping escalation windows:
+
+- `TLSCertificateExpiringSoon` warns when between 14 and 30 days remain.
+- `TLSCertificateExpiryCritical` becomes critical when fewer than 14 days remain.
+- `EndpointProbeFailed` also covers the HTTPS job and detects invalid, expired, or unreachable HTTPS endpoints.
+
+A live probe confirmed certificate validation and TLS 1.3 negotiation. A controlled probe of an intentionally expired test certificate returned `probe_success 0`.
+
+The alert thresholds are tested safely with `promtool` synthetic rule tests. A 20-day test value fires only the warning, while a 10-day value fires only the critical alert.
+
 ## Log-Based Alerting
 
 Grafana evaluates two provisioned log rules against Loki once per minute:
