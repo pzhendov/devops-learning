@@ -10,6 +10,7 @@ This lab provides a containerized monitoring, visualization, alerting, and centr
 - The webhook receiver accepts and stores firing and resolved notifications.
 - Alloy collects Docker container logs and forwards them to Loki.
 - Loki stores and queries centralized logs.
+- Blackbox Exporter probes HTTP endpoints from a client’s perspective.
 - Grafana visualizes Prometheus metrics and explores Loki logs.
 
 ## Architecture
@@ -24,6 +25,7 @@ Node Exporter ---> Prometheus ---> Alertmanager ---> Webhook Receiver
                     Grafana
 
 Docker containers ---> Alloy ---> Loki ---> Grafana
+HTTP endpoints ---> Blackbox Exporter ---> Prometheus
 ```
 
 ## Monitored Targets
@@ -35,8 +37,10 @@ Prometheus collects metrics from:
 - Alertmanager
 - Loki
 - Alloy
+- Blackbox Exporter
+- HTTP endpoints exposed by Grafana and the webhook receiver
 
-The `up` metric reports whether each target is reachable.
+The `up` metric reports whether Prometheus can scrape each monitoring target. For HTTP probes, `probe_success` reports whether the actual endpoint request succeeded.
 
 ## Alert Rules
 
@@ -123,6 +127,33 @@ Grafana provisions Loki automatically as a data source, allowing container logs 
 ```
 
 Loki and Alloy management ports bind only to the VM loopback address. Alloy reads the Docker API through `/var/run/docker.sock`; this privileged access is suitable for this isolated learning VM and should be carefully restricted in production.
+
+## Black-Box Endpoint Monitoring
+
+Blackbox Exporter tests services from a client’s perspective instead of inspecting only their internal process metrics. It probes:
+
+- Grafana at `http://grafana:3000/api/health`
+- The webhook receiver at `http://webhook-receiver:8080/health`
+
+Prometheus sends each target URL to Blackbox Exporter using the `http_2xx` module. The original URL is preserved in the `instance` label, while Prometheus sends the actual scrape request to `blackbox-exporter:9115`.
+
+The two principal health signals have different meanings:
+
+```text
+up{job="blackbox-http"} = Prometheus successfully collected the probe result
+probe_success = Blackbox Exporter successfully reached the real HTTP endpoint
+```
+
+Therefore, `up` can remain `1` while `probe_success` becomes `0`. This means the monitoring path is working and has successfully detected that the application endpoint is unavailable.
+
+The endpoint recording rules provide:
+
+- `instance:sli_http_availability:ratio_5m` for a responsive endpoint-availability view
+- `instance:sli_http_availability:ratio_1h` for a more stable endpoint-availability view
+
+`EndpointProbeFailed` raises a critical alert when an endpoint probe remains unsuccessful for more than one minute.
+
+A controlled Grafana outage confirmed the complete lifecycle: the Blackbox scrape remained healthy, the Grafana probe failed, the alert fired, and a resolved notification was delivered after Grafana recovered.
 
 ## Log-Based Alerting
 

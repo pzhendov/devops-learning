@@ -56,6 +56,7 @@ jobs:
           test -s monitoring/prometheus/grafana/provisioning/alerting/notification-policies.json
           test -s monitoring/prometheus/loki/loki.yml
           test -s monitoring/prometheus/alloy/config.alloy
+          test -s monitoring/prometheus/blackbox/blackbox.yml
           test -s monitoring/prometheus/webhook-receiver/app.py
           test -s monitoring/prometheus/webhook-receiver/Dockerfile
           test -s monitoring/prometheus/webhook-receiver/.dockerignore
@@ -71,6 +72,8 @@ jobs:
           grep -q "alert: LokiUnavailable" monitoring/prometheus/alerts.yml
           grep -q "alert: LokiDegraded" monitoring/prometheus/alerts.yml
           grep -q "alert: AlloyUnavailable" monitoring/prometheus/alerts.yml
+          grep -q "job_name: blackbox-http" monitoring/prometheus/prometheus.yml
+          grep -q "alert: EndpointProbeFailed" monitoring/prometheus/alerts.yml
 
       - name: Validate monitoring backup systemd units
         run: |
@@ -298,6 +301,8 @@ jobs:
               "job:sli_availability:ratio_5m",
               "job:sli_availability:ratio_15m",
               "job:sli_availability:ratio_1h",
+              "instance:sli_http_availability:ratio_5m",
+              "instance:sli_http_availability:ratio_1h",
               "slo:availability:target",
               "job:slo_error_budget_burn_rate:ratio_5m",
               "job:slo_error_budget_burn_rate:ratio_15m",
@@ -322,6 +327,16 @@ jobs:
           }
 
           assert "AvailabilitySLOBreach" not in rules
+
+          endpoint = rules["EndpointProbeFailed"]
+          assert endpoint["expr"] == (
+              "probe_success{job=\"blackbox-http\"} == 0"
+          )
+          assert endpoint["for"] == "1m"
+          assert endpoint["labels"] == {
+              "severity": "critical",
+              "category": "endpoint",
+          }
 
           fast = rules["AvailabilityErrorBudgetFastBurn"]
           assert fast["for"] == "1m"
@@ -417,6 +432,14 @@ jobs:
             --mount type=bind,source="$PWD/monitoring/prometheus/alloy/config.alloy",target=/etc/alloy/config.alloy,readonly \
             grafana/alloy:v1.18.0 \
             validate /etc/alloy/config.alloy
+
+      - name: Validate Blackbox Exporter configuration
+        run: |
+          docker run --rm \
+            --mount type=bind,source="$PWD/monitoring/prometheus/blackbox/blackbox.yml",target=/config/blackbox.yml,readonly \
+            prom/blackbox-exporter:v0.28.0 \
+            --config.file=/config/blackbox.yml \
+            --config.check
 
       - name: Validate Grafana provisioning YAML
         run: |
