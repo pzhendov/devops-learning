@@ -11,6 +11,22 @@ groups:
       - record: job:sli_availability:ratio_1h
         expr: avg by (job) (avg_over_time(up[1h]))
 
+      - record: instance:sli_http_availability:ratio_5m
+        expr: >-
+          avg by (instance) (
+            avg_over_time(
+              probe_success{job="blackbox-http"}[5m]
+            )
+          )
+
+      - record: instance:sli_http_availability:ratio_1h
+        expr: >-
+          avg by (instance) (
+            avg_over_time(
+              probe_success{job="blackbox-http"}[1h]
+            )
+          )
+
       - record: slo:availability:target
         expr: vector(0.99)
 

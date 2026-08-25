@@ -86,3 +86,17 @@ groups:
           description: >-
             The {{ $labels.job }} availability error budget is burning
             too quickly across both the fifteen-minute and one-hour windows.
+
+  - name: endpoint-availability
+    rules:
+      - alert: EndpointProbeFailed
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: endpoint
+        annotations:
+          summary: HTTP endpoint probe failed for {{ $labels.instance }}
+          description: >-
+            Blackbox Exporter has been unable to complete a successful
+            HTTP probe of {{ $labels.instance }} for more than one minute.

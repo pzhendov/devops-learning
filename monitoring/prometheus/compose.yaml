@@ -110,6 +110,18 @@ services:
     mem_limit: 256m
     restart: unless-stopped
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.28.0
+    container_name: monitoring-blackbox-exporter
+    command:
+      - --config.file=/etc/blackbox_exporter/blackbox.yml
+    ports:
+      - "127.0.0.1:9115:9115"
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+    mem_limit: 128m
+    restart: unless-stopped
+
 volumes:
   prometheus-data:
   alertmanager-data:
