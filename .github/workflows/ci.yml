@@ -296,8 +296,11 @@ jobs:
 
           required = {
               "job:sli_availability:ratio_5m",
+              "job:sli_availability:ratio_15m",
               "job:sli_availability:ratio_1h",
               "slo:availability:target",
+              "job:slo_error_budget_burn_rate:ratio_5m",
+              "job:slo_error_budget_burn_rate:ratio_15m",
               "job:slo_error_budget_remaining:ratio_1h",
               "job:slo_error_budget_burn_rate:ratio_1h",
           }
@@ -311,27 +314,34 @@ jobs:
               ).read_text(encoding="utf-8")
           )
 
-          rules = [
-              rule
+          rules = {
+              rule["alert"]: rule
               for group in alerts["groups"]
               for rule in group["rules"]
-          ]
+              if "alert" in rule
+          }
 
-          slo_alert = next(
-              rule
-              for rule in rules
-              if rule.get("alert") == "AvailabilitySLOBreach"
-          )
+          assert "AvailabilitySLOBreach" not in rules
 
-          assert slo_alert["for"] == "2m"
-          assert slo_alert["labels"] == {
+          fast = rules["AvailabilityErrorBudgetFastBurn"]
+          assert fast["for"] == "1m"
+          assert fast["labels"] == {
+              "severity": "critical",
+              "category": "slo",
+          }
+          assert "ratio_5m > 14.4" in fast["expr"]
+          assert "ratio_15m > 14.4" in fast["expr"]
+
+          slow = rules["AvailabilityErrorBudgetSlowBurn"]
+          assert slow["for"] == "2m"
+          assert slow["labels"] == {
               "severity": "warning",
               "category": "slo",
           }
-          assert "job:sli_availability:ratio_1h" in slo_alert["expr"]
-          assert "slo:availability:target" in slo_alert["expr"]
+          assert "ratio_15m > 6" in slow["expr"]
+          assert "ratio_1h > 6" in slow["expr"]
 
-          print("Valid availability SLI and SLO semantics")
+          print("Valid multi-window availability SLI and SLO semantics")
           '
 
       - name: Validate Alertmanager configuration
@@ -355,18 +365,40 @@ jobs:
           )
 
           rules = config.get("inhibit_rules", [])
-          assert len(rules) == 1
+          assert len(rules) == 2
 
-          rule = rules[0]
-          assert rule["source_matchers"] == [
+          loki = next(
+              rule
+              for rule in rules
+              if "alertname=\"LokiUnavailable\""
+              in rule["source_matchers"]
+          )
+          assert loki["source_matchers"] == [
               "alertname=\"LokiUnavailable\"",
               "severity=\"critical\"",
           ]
-          assert rule["target_matchers"] == [
+          assert loki["target_matchers"] == [
               "alertname=\"LokiDegraded\"",
               "severity=\"warning\"",
           ]
-          assert rule["equal"] == ["job", "instance"]
+          assert loki["equal"] == ["job", "instance"]
+
+          slo = next(
+              rule
+              for rule in rules
+              if "alertname=\"AvailabilityErrorBudgetFastBurn\""
+              in rule["source_matchers"]
+          )
+          assert slo["source_matchers"] == [
+              "alertname=\"AvailabilityErrorBudgetFastBurn\"",
+              "severity=\"critical\"",
+              "category=\"slo\"",
+          ]
+          assert slo["target_matchers"] == [
+              "severity=\"warning\"",
+              "category=\"slo\"",
+          ]
+          assert slo["equal"] == ["job"]
 
           print("Valid Alertmanager inhibition semantics")
           '

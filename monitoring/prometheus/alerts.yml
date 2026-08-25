@@ -49,16 +49,40 @@ groups:
 
   - name: service-level-objectives
     rules:
-      - alert: AvailabilitySLOBreach
+      - alert: AvailabilityErrorBudgetFastBurn
         expr: >-
-          job:sli_availability:ratio_1h
-          < scalar(slo:availability:target)
+          (
+            job:slo_error_budget_burn_rate:ratio_5m > 14.4
+          )
+          and
+          (
+            job:slo_error_budget_burn_rate:ratio_15m > 14.4
+          )
+        for: 1m
+        labels:
+          severity: critical
+          category: slo
+        annotations:
+          summary: Fast availability error-budget burn for {{ $labels.job }}
+          description: >-
+            The {{ $labels.job }} availability error budget is burning
+            rapidly across both the five-minute and fifteen-minute windows.
+
+      - alert: AvailabilityErrorBudgetSlowBurn
+        expr: >-
+          (
+            job:slo_error_budget_burn_rate:ratio_15m > 6
+          )
+          and
+          (
+            job:slo_error_budget_burn_rate:ratio_1h > 6
+          )
         for: 2m
         labels:
           severity: warning
           category: slo
         annotations:
-          summary: Availability SLO breached for {{ $labels.job }}
+          summary: Sustained availability error-budget burn for {{ $labels.job }}
           description: >-
-            The one-hour availability ratio for {{ $labels.job }}
-            is {{ $value | humanizePercentage }}, below the 99% SLO.
+            The {{ $labels.job }} availability error budget is burning
+            too quickly across both the fifteen-minute and one-hour windows.
