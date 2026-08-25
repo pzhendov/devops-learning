@@ -188,15 +188,16 @@ The inhibition rule is stored in `alertmanager.yml` and matches the source and t
 
 ## Recording Rules, SLIs, and SLOs
 
-Prometheus recording rules precompute frequently used expressions and store their results as new time series. This makes dashboards and alerts faster and keeps the reliability calculations consistent.
+Prometheus recording rules precompute frequently used expressions and store their results as new time series. This makes dashboards and alerts faster and keeps reliability calculations consistent.
 
 The availability SLI measures the proportion of successful `up` samples observed for each monitored job:
 
 - `job:sli_availability:ratio_5m` provides a responsive five-minute view.
-- `job:sli_availability:ratio_1h` provides the one-hour evaluation window used by this lab.
+- `job:sli_availability:ratio_15m` confirms whether a problem persists.
+- `job:sli_availability:ratio_1h` provides a more stable one-hour view.
 - `slo:availability:target` records the availability objective of `0.99`, or 99%.
-- `job:slo_error_budget_remaining:ratio_1h` records the remaining error-budget ratio.
-- `job:slo_error_budget_burn_rate:ratio_1h` records how quickly the permitted error budget is being consumed.
+- `job:slo_error_budget_remaining:ratio_1h` records the remaining one-hour error-budget ratio.
+- Burn-rate recording rules calculate budget consumption across five-minute, fifteen-minute, and one-hour windows.
 
 The SLI is the reliability actually measured, while the SLO is the reliability target. With a 99% SLO, the permitted error budget is 1%.
 
@@ -205,6 +206,22 @@ SLI = measured availability
 SLO = required availability
 error budget = 1 - SLO
 burn rate = observed failure ratio / permitted failure ratio
+
+A burn rate of `1` consumes the budget at exactly the permitted rate. A value above `1` consumes it too quickly, while `0` means no observed failures are consuming the budget.
+
+Multi-window alerting combines a responsive window with a longer confirmation window:
+
+- `AvailabilityErrorBudgetFastBurn` is critical when both the five-minute and fifteen-minute burn rates exceed `14.4` for one minute.
+- `AvailabilityErrorBudgetSlowBurn` is a warning when both the fifteen-minute and one-hour burn rates exceed `6` for two minutes.
+- The previous single-window `AvailabilitySLOBreach` alert was removed after the multi-window alerts were proven.
+
+The short window detects the problem quickly, while the longer window confirms sustained impact. Both conditions must be true before the corresponding alert fires.
+
+A controlled Alloy outage caused all three burn-rate windows to rise and both multi-window alerts to fire. Alertmanager kept the critical fast-burn alert active while inhibiting warning SLO alerts for the same job. After Alloy recovered, the critical alert cleared first and the slower warning remained until the longer reliability windows healed.
+
+The lab uses short windows so the complete lifecycle can be observed during training. Production SLO alerting normally uses longer windows based on the service’s SLO period, traffic, and operational response requirements.
+
+Prometheus calculates these SLIs from samples it observes. Shortly after Prometheus starts, a failure can represent a large percentage of the available samples even when the configured range is longer. If Prometheus itself is unavailable, missing samples are not automatically counted as target downtime; independent probing can address this limitation in a production-oriented design.
 ```
 
 ## Start the Stack

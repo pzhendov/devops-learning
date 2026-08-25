@@ -21,6 +21,16 @@ inhibit_rules:
       - job
       - instance
 
+  - source_matchers:
+      - alertname="AvailabilityErrorBudgetFastBurn"
+      - severity="critical"
+      - category="slo"
+    target_matchers:
+      - severity="warning"
+      - category="slo"
+    equal:
+      - job
+
 receivers:
   - name: local-receiver
     webhook_configs:

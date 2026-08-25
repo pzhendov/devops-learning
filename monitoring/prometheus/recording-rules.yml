@@ -5,11 +5,26 @@ groups:
       - record: job:sli_availability:ratio_5m
         expr: avg by (job) (avg_over_time(up[5m]))
 
+      - record: job:sli_availability:ratio_15m
+        expr: avg by (job) (avg_over_time(up[15m]))
+
       - record: job:sli_availability:ratio_1h
         expr: avg by (job) (avg_over_time(up[1h]))
 
       - record: slo:availability:target
         expr: vector(0.99)
+
+      - record: job:slo_error_budget_burn_rate:ratio_5m
+        expr: >-
+          (1 - job:sli_availability:ratio_5m)
+          /
+          (1 - scalar(slo:availability:target))
+
+      - record: job:slo_error_budget_burn_rate:ratio_15m
+        expr: >-
+          (1 - job:sli_availability:ratio_15m)
+          /
+          (1 - scalar(slo:availability:target))
 
       - record: job:slo_error_budget_remaining:ratio_1h
         expr: >-
