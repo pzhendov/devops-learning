@@ -1,0 +1,51 @@
+rule_files:
+  - ../alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - name: TLS certificate warning window
+    interval: 1m
+    input_series:
+      - series: 'instance:tls_certificate_expiry:days{instance="https://example.com"}'
+        values: '20x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TLSCertificateExpiringSoon
+        exp_alerts:
+          - exp_labels:
+              instance: https://example.com
+              severity: warning
+              category: tls
+            exp_annotations:
+              summary: TLS certificate expires soon for https://example.com
+              description: >-
+                The earliest certificate in the TLS chain for
+                https://example.com expires in approximately 20 days.
+
+      - eval_time: 2m
+        alertname: TLSCertificateExpiryCritical
+        exp_alerts: []
+
+  - name: TLS certificate critical window
+    interval: 1m
+    input_series:
+      - series: 'instance:tls_certificate_expiry:days{instance="https://example.com"}'
+        values: '10x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TLSCertificateExpiringSoon
+        exp_alerts: []
+
+      - eval_time: 2m
+        alertname: TLSCertificateExpiryCritical
+        exp_alerts:
+          - exp_labels:
+              instance: https://example.com
+              severity: critical
+              category: tls
+            exp_annotations:
+              summary: TLS certificate expiry is critical for https://example.com
+              description: >-
+                The earliest certificate in the TLS chain for
+                https://example.com expires in approximately 10 days.
