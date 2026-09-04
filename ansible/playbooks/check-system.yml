@@ -1,0 +1,22 @@
+---
+- name: Check managed system
+  hosts: monitoring
+  gather_facts: true
+
+  tasks:
+    - name: Show managed host details
+      ansible.builtin.debug:
+        msg:
+          - "Hostname: {{ ansible_facts['hostname'] }}"
+          - "OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}"
+          - "Architecture: {{ ansible_facts['architecture'] }}"
+          - "Python: {{ ansible_facts['python_version'] }}"
+
+    - name: Read system uptime
+      ansible.builtin.command: uptime
+      register: uptime_result
+      changed_when: false
+
+    - name: Show system uptime
+      ansible.builtin.debug:
+        var: uptime_result.stdout

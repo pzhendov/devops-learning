@@ -1,0 +1,24 @@
+---
+- name: Configure DevOps learning VM
+  hosts: monitoring
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure the training directory exists
+      ansible.builtin.file:
+        path: /etc/devops-learning
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure the managed marker file exists
+      ansible.builtin.copy:
+        dest: /etc/devops-learning/managed-by-ansible.txt
+        content: |
+          This machine is managed by Ansible.
+          Project: DevOps Learning
+        owner: root
+        group: root
+        mode: "0644"

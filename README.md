@@ -22,6 +22,7 @@ The projects are developed in isolated Git branches, validated locally and in Gi
 
 - Bash scripts with arguments, validation, and operational exit codes
 - Nginx deployment automation
+- Agentless configuration management and idempotent playbooks with Ansible
 - HTTP and TLS certificate health checks
 - Cron and systemd scheduling
 - ShellCheck validation
@@ -100,6 +101,19 @@ Infrastructure as Code exercises covering:
 - Remote state migration to HCP Terraform
 - State versioning and locking
 
+### Ansible Automation
+
+Agentless configuration-management exercises using the Mac as the control node and `devops-lab` as the managed node:
+
+- Inventory groups and SSH host aliases
+- Project-level Ansible configuration
+- Ad-hoc connectivity and command execution
+- Managed-node fact gathering
+- Playbook syntax validation
+- Check mode and configuration diffs
+- Privileged desired-state configuration
+- Idempotent playbook execution
+
 ### Monitoring and Alerting Stack
 
 A reproducible observability stack containing:
@@ -140,6 +154,7 @@ Checks include:
 - Alertmanager configuration
 - Grafana provisioning YAML
 - Grafana dashboard JSON
+- Ansible inventory and playbook syntax
 
 ## Repository Structure
 
@@ -152,6 +167,7 @@ Checks include:
 ├── systemd/                 # Service and timer units
 ├── terraform/               # Terraform labs and reusable modules
 └── web/                     # Nginx webpage
+├── ansible/                 # Ansible inventory and playbooks
 ```
 
 ## Development Workflow
@@ -176,4 +192,4 @@ Delete merged branch
 
 ## Current Focus
 
-The current learning stage focuses on observability, alert notification routing, and operational troubleshooting.
+The current learning stage focuses on Ansible configuration management, repeatable server automation, and operational verification.
