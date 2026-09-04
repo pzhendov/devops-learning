@@ -1,0 +1,6 @@
+---
+nginx_site_name: ansible-demo
+nginx_listen_port: 8082
+nginx_document_root: /var/www/ansible-demo
+nginx_page_title: Ansible Managed Site
+nginx_allowed_network: 192.168.252.0/24

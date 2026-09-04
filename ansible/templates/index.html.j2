@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ nginx_page_title }}</title>
+</head>
+<body>
+  <main>
+    <h1>{{ nginx_page_title }}</h1>
+    <p>This page was deployed automatically with Ansible.</p>
+    <dl>
+      <dt>Managed host</dt>
+      <dd>{{ inventory_hostname }}</dd>
+
+      <dt>Operating system</dt>
+      <dd>{{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}</dd>
+
+      <dt>Site name</dt>
+      <dd>{{ nginx_site_name }}</dd>
+
+      <dt>Listening port</dt>
+      <dd>{{ nginx_listen_port }}</dd>
+    </dl>
+  </main>
+</body>
+</html>

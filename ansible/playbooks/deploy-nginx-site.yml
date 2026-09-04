@@ -1,0 +1,92 @@
+---
+- name: Deploy Ansible-managed Nginx site
+  hosts: monitoring
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Ensure Nginx is installed
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Ensure Nginx is enabled and running
+      ansible.builtin.service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Ensure the document root exists
+      ansible.builtin.file:
+        path: "{{ nginx_document_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy the HTML page
+      ansible.builtin.template:
+        src: ../templates/index.html.j2
+        dest: "{{ nginx_document_root }}/index.html"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Deploy the Nginx site configuration
+      ansible.builtin.template:
+        src: ../templates/nginx-site.conf.j2
+        dest: "/etc/nginx/sites-available/{{ nginx_site_name }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload Nginx safely
+
+    - name: Enable the Nginx site
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ nginx_site_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ nginx_site_name }}"
+        state: link
+        force: true
+      notify: Reload Nginx safely
+
+    - name: Allow the managed site from the Multipass network
+      community.general.ufw:
+        rule: allow
+        direction: in
+        proto: tcp
+        port: "{{ nginx_listen_port }}"
+        from_ip: "{{ nginx_allowed_network }}"
+        comment: Ansible-managed Nginx training site
+
+    - name: Apply pending Nginx handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verify the managed HTTP endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ nginx_listen_port }}/"
+        return_content: true
+        status_code: 200
+      register: nginx_response
+      when: not ansible_check_mode
+
+    - name: Verify the expected page content
+      ansible.builtin.assert:
+        that:
+          - nginx_page_title in nginx_response.content
+        success_msg: The Ansible-managed Nginx site is healthy.
+        fail_msg: The endpoint responded without the expected page content.
+      when: not ansible_check_mode
+
+  handlers:
+    - name: Validate Nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      listen: Reload Nginx safely
+
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+      listen: Reload Nginx safely
