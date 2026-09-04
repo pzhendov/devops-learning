@@ -23,6 +23,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes shellcheck python3-yaml jq
+          python3 -m pip install ansible-core==2.21.3
 
       - name: Check Bash scripts
         run: shellcheck scripts/*
@@ -61,6 +62,10 @@ jobs:
           test -s monitoring/prometheus/webhook-receiver/app.py
           test -s monitoring/prometheus/webhook-receiver/Dockerfile
           test -s monitoring/prometheus/webhook-receiver/.dockerignore
+          test -s ansible.cfg
+          test -s ansible/inventory.ini
+          test -s ansible/playbooks/check-system.yml
+          test -s ansible/playbooks/configure-lab.yml
 
       - name: Check important configuration
         run: |
@@ -78,6 +83,12 @@ jobs:
           grep -q "job_name: blackbox-https" monitoring/prometheus/prometheus.yml
           grep -q "alert: TLSCertificateExpiringSoon" monitoring/prometheus/alerts.yml
           grep -q "alert: TLSCertificateExpiryCritical" monitoring/prometheus/alerts.yml
+
+      - name: Validate Ansible inventory and playbooks
+        run: |
+          ansible-inventory --graph
+          ansible-playbook ansible/playbooks/check-system.yml --syntax-check
+          ansible-playbook ansible/playbooks/configure-lab.yml --syntax-check
 
       - name: Validate monitoring backup systemd units
         run: |
