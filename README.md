@@ -105,13 +105,16 @@ Infrastructure as Code exercises covering:
 
 Agentless configuration-management exercises using the Mac as the control node and `devops-lab` as the managed node:
 
-- Inventory groups and SSH host aliases
-- Project-level Ansible configuration
+- Inventory groups, SSH host aliases, and project configuration
 - Ad-hoc connectivity and command execution
 - Managed-node fact gathering
-- Playbook syntax validation
-- Check mode and configuration diffs
+- Playbook syntax validation and check mode
 - Privileged desired-state configuration
+- Group variables and reusable Jinja templates
+- Package, service, directory, file, and symlink management
+- Validated handlers for safe Nginx reloads
+- Least-privilege UFW rules using an external Ansible collection
+- HTTP health and rendered-content assertions
 - Idempotent playbook execution
 
 ### Monitoring and Alerting Stack

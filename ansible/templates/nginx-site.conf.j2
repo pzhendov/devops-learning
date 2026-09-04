@@ -1,0 +1,16 @@
+# Managed by Ansible. Manual changes will be overwritten.
+server {
+    listen {{ nginx_listen_port }};
+    listen [::]:{{ nginx_listen_port }};
+
+    server_name _;
+    root {{ nginx_document_root }};
+    index index.html;
+
+    access_log /var/log/nginx/{{ nginx_site_name }}-access.log;
+    error_log /var/log/nginx/{{ nginx_site_name }}-error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
